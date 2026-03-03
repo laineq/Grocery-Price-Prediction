@@ -40,4 +40,4 @@ os.makedirs(os.path.dirname(cleaned_file_path), exist_ok=True)
 df.to_csv(cleaned_file_path, index=False)
 
 print("Cleaned dataset saved to:", cleaned_file_path)
-print(df.head())
+print(df.head()) 
