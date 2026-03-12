@@ -47,7 +47,7 @@ VECTOR_META = {
 def save_bronze_full_task():
     """
     Fetch full historical grocery price data from Statistics Canada API
-    (2017–2026 range) and store raw JSON into the S3 Bronze layer.
+    (2017–2025 range) and store raw JSON into the S3 Bronze layer.
     """
 
     # StatCan Web Data Service endpoint for bulk historical retrieval
@@ -73,7 +73,7 @@ def save_bronze_full_task():
     s3 = boto3.client("s3")
 
     # Store as a single raw Bronze file (full snapshot)
-    s3_key = "bronze/canadian_grocery_prices/full_history/raw_2017_2026.json"
+    s3_key = "bronze/canadian_grocery_prices/full_history/raw_2017_2025.json"
 
     s3.put_object(
         Bucket=BUCKET_NAME,
@@ -94,7 +94,7 @@ def transform_to_silver():
     s3 = boto3.client("s3")
 
     # Bronze full-history file location
-    bronze_key = "bronze/canadian_grocery_prices/full_history/raw_2017_2026.json"
+    bronze_key = "bronze/canadian_grocery_prices/full_history/raw_2017_2025.json"
     print(f"Reading Bronze: s3://{BUCKET_NAME}/{bronze_key}")
 
     # Load Bronze JSON
