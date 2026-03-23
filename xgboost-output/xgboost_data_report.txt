@@ -1,0 +1,61 @@
+XGBoost data preparation report
+
+Duplicate time point check
+avocado_import.csv: no duplicate time points.
+avocado_price_adjusted.csv: no duplicate time points.
+gas_price.csv: no duplicate time points.
+mexico_weather_adjusted.csv: duplicate time points found for 121 months. Sample months=['2016-01', '2016-02', '2016-03', '2016-04', '2016-05', '2016-06', '2016-07', '2016-08', '2016-09', '2016-10']
+tomato_import.csv: duplicate time points found for 118 months. Sample months=['2016-01', '2016-02', '2016-03', '2016-04', '2016-05', '2016-06', '2016-07', '2016-08', '2016-09', '2016-10']
+tomato_price_adjusted.csv: no duplicate time points.
+xrate_adjusted.csv: no duplicate time points.
+
+Column dtype check
+date: object
+avocado_import_qty: float64
+avocado_price_adjusted: float64
+gas_price_us_cad_l: float64
+gas_price_mx_cad_l: float64
+gas_price_ca_cad_l: float64
+gas_price_integrated_gas_price: float64
+mexico_weather_adjusted_state_estado_de_méxico_min_c: float64
+mexico_weather_adjusted_state_jalisco_min_c: float64
+mexico_weather_adjusted_state_michoacán_min_c: float64
+mexico_weather_adjusted_state_sinaloa_min_c: float64
+mexico_weather_adjusted_state_estado_de_méxico_mean_c: float64
+mexico_weather_adjusted_state_jalisco_mean_c: float64
+mexico_weather_adjusted_state_michoacán_mean_c: float64
+mexico_weather_adjusted_state_sinaloa_mean_c: float64
+mexico_weather_adjusted_state_estado_de_méxico_max_c: float64
+mexico_weather_adjusted_state_jalisco_max_c: float64
+mexico_weather_adjusted_state_michoacán_max_c: float64
+mexico_weather_adjusted_state_sinaloa_max_c: float64
+mexico_weather_adjusted_state_estado_de_méxico_precipitation_mm: float64
+mexico_weather_adjusted_state_jalisco_precipitation_mm: float64
+mexico_weather_adjusted_state_michoacán_precipitation_mm: float64
+mexico_weather_adjusted_state_sinaloa_precipitation_mm: float64
+tomato_import_partner_mexico_qty: float64
+tomato_import_partner_usa_qty: float64
+tomato_price_adjusted: float64
+xrate_adjusted_mxn_cad: float64
+xrate_adjusted_usd_cad: float64
+year: int32
+month: int32
+log_avocado_price_adjusted: float64
+log_tomato_price_adjusted: float64
+
+Missing value check
+avocado_import_qty: 15 missing
+avocado_price_adjusted: 13 missing
+tomato_price_adjusted: 13 missing
+log_tomato_price_adjusted: 13 missing
+log_avocado_price_adjusted: 13 missing
+tomato_import_partner_mexico_qty: 3 missing
+tomato_import_partner_usa_qty: 3 missing
+
+Obvious value check
+avocado_import_qty: found 2 IQR outliers, sample=[{'date': '2017-02', 'avocado_import_qty': 0.0}, {'date': '2017-07', 'avocado_import_qty': 0.0}]
+mexico_weather_adjusted_state_estado_de_méxico_max_c: found 1 IQR outliers, sample=[{'date': '2024-05', 'mexico_weather_adjusted_state_estado_de_méxico_max_c': 29.5}]
+mexico_weather_adjusted_state_jalisco_max_c: found 1 IQR outliers, sample=[{'date': '2023-12', 'mexico_weather_adjusted_state_jalisco_max_c': 23.7}]
+mexico_weather_adjusted_state_sinaloa_precipitation_mm: found 4 IQR outliers, sample=[{'date': '2018-09', 'mexico_weather_adjusted_state_sinaloa_precipitation_mm': 320.4}, {'date': '2019-08', 'mexico_weather_adjusted_state_sinaloa_precipitation_mm': 339.6}, {'date': '2021-08', 'mexico_weather_adjusted_state_sinaloa_precipitation_mm': 391.7}, {'date': '2022-08', 'mexico_weather_adjusted_state_sinaloa_precipitation_mm': 339.3}]
+tomato_import_partner_usa_qty: found 3 IQR outliers, sample=[{'date': '2017-01', 'tomato_import_partner_usa_qty': 0.0}, {'date': '2017-03', 'tomato_import_partner_usa_qty': 0.0}, {'date': '2017-10', 'tomato_import_partner_usa_qty': 0.0}]
+tomato_price_adjusted: found 1 IQR outliers, sample=[{'date': '2017-12', 'tomato_price_adjusted': 5.84}]
