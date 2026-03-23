@@ -1,0 +1,7 @@
+Feature,Method,Optimal_Lag,Correlation
+import_qty,ccf (differenced),0,0.523
+MEAN_C,ccf,3,-0.602
+PRECIPITATION_MM,ccf,5,-0.64
+MXN_CAD,ccf,0,-0.051
+USD_CAD,ccf,0,0.156
+integrated_gas_price,manual (differenced),0,-0.156
