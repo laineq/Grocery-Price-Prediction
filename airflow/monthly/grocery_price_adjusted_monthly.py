@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.exceptions import AirflowSkipException
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime
 from io import BytesIO
 import boto3
@@ -173,7 +174,7 @@ default_args = {
 with DAG(
     dag_id="grocery_price_adjusted_monthly",
     default_args=default_args,
-    schedule="@daily",
+    schedule=None,
     catchup=False,
 ) as dag:
 
@@ -182,3 +183,11 @@ with DAG(
         task_id="transform_to_silver",
         python_callable=transform_to_silver,
     )
+
+    trigger_gold_task = TriggerDagRunOperator(
+        task_id="trigger_gold_features_monthly",
+        trigger_dag_id="gold_features_monthly",
+        wait_for_completion=False,
+    )
+
+    transform_task >> trigger_gold_task

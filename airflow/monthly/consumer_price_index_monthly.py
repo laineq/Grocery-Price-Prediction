@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.exceptions import AirflowSkipException
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime
 from io import BytesIO
 import requests
@@ -237,5 +238,11 @@ with DAG(
         python_callable=transform_to_silver,
     )
 
+    trigger_adjusted_task = TriggerDagRunOperator(
+        task_id="trigger_grocery_price_adjusted_monthly",
+        trigger_dag_id="grocery_price_adjusted_monthly",
+        wait_for_completion=False,
+    )
+
     # Task dependency
-    [avocado_fetch_task, tomato_fetch_task] >> transform_task
+    [avocado_fetch_task, tomato_fetch_task] >> transform_task >> trigger_adjusted_task

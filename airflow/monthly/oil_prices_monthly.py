@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.exceptions import AirflowSkipException
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime
 from io import BytesIO
 import requests
@@ -471,6 +472,13 @@ with DAG(
         trigger_rule="none_failed_min_one_success",
     )
 
+    trigger_gold_task = TriggerDagRunOperator(
+        task_id="trigger_gold_features_monthly",
+        trigger_dag_id="gold_features_monthly",
+        wait_for_completion=False,
+        trigger_rule="none_failed_min_one_success",
+    )
+
     us_fetch_task >> us_transform_task
     canada_fetch_task >> canada_transform_task
-    [us_transform_task, canada_transform_task] >> combine_task
+    [us_transform_task, canada_transform_task] >> combine_task >> trigger_gold_task

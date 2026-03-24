@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.exceptions import AirflowSkipException
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime
 from io import BytesIO
 import requests
@@ -182,5 +183,11 @@ with DAG(
         python_callable=transform_to_silver,
     )
 
+    trigger_gold_task = TriggerDagRunOperator(
+        task_id="trigger_gold_features_monthly",
+        trigger_dag_id="gold_features_monthly",
+        wait_for_completion=False,
+    )
+
     # Task dependency
-    fetch_task >> transform_task
+    fetch_task >> transform_task >> trigger_gold_task
