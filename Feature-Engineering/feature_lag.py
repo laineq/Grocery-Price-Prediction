@@ -99,7 +99,7 @@ def calculate_mixed_lags(df, target_col='price_adjusted', max_lag=6):
     threshold = 2 / np.sqrt(n)
 
     # A. CCF for agricultural features
-    ccf_cols = ['import_qty','MEAN_C','PRECIPITATION_MM','MXN_CAD','USD_CAD']
+    ccf_cols = ['MEAN_C','PRECIPITATION_MM','MXN_CAD','USD_CAD']
     for col in ccf_cols:
         exog_series = df_clean[col]
 
@@ -133,7 +133,7 @@ def calculate_mixed_lags(df, target_col='price_adjusted', max_lag=6):
             })
     
     # B. Manual Pandas Shift 
-    manual_cols = ['integrated_gas_price']
+    manual_cols = ['integrated_gas_price','import_qty']
     for col in manual_cols:
         exog_series = df_clean[col]
         manual_corrs = []

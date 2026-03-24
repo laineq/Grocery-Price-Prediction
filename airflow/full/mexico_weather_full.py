@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 from datetime import datetime
 import requests
 import json
@@ -11,6 +11,14 @@ import pandas as pd
 
 # S3 bucket name provided through environment variable
 BUCKET_NAME = os.environ["BUCKET_NAME"]
+
+# Only keep the Mexico states used in downstream avocado/tomato features
+TARGET_STATES = [
+    "Sinaloa",
+    "Michoacán",
+    "Jalisco",
+    "Estado de México",
+]
 
 
 def save_bronze_full_task():
@@ -93,9 +101,6 @@ def transform_to_silver():
     # Convert JSON records into a pandas DataFrame
     df = pd.DataFrame(data)
 
-    print("Raw sample:")
-    print(df.head())
-
     # Rename columns to standardized names
     df = df.rename(columns={
         "PERIODO": "PERIOD",
@@ -117,10 +122,8 @@ def transform_to_silver():
 
     # Replace aggregated "Nacional" label with "Mexico"
     df["STATE"] = df["STATE"].replace({"Nacional": "Mexico"})
-
-    # Create partition columns based on date
+    df = df[df["STATE"].isin(TARGET_STATES)].copy()
     df["year"] = df["PERIOD"].dt.strftime("%Y")
-    df["month"] = df["PERIOD"].dt.strftime("%m")
 
     # Convert date column to string format for consistency
     df["PERIOD"] = df["PERIOD"].dt.strftime("%Y-%m-%d")
@@ -130,18 +133,15 @@ def transform_to_silver():
 
     print(f"Total rows: {len(df):,}")
 
-    # Write partitioned Parquet files to the Silver layer
-    for (year, month), group in df.groupby(["year", "month"]):
+    # Write yearly Parquet files to the Silver layer
+    for year, group in df.groupby("year"):
 
         # Convert group DataFrame to Parquet in memory
         buffer = BytesIO()
-        group.drop(columns=["year", "month"]).to_parquet(buffer, index=False)
+        group.drop(columns=["year"]).to_parquet(buffer, index=False)
 
         # Silver partition path
-        silver_key = (
-            f"silver/mexico_weather/"
-            f"year={year}/month={month}/data.parquet"
-        )
+        silver_key = f"silver/mexico_weather/year={year}/data.parquet"
 
         # Upload Parquet file to S3
         s3.put_object(

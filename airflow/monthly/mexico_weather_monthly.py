@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 from datetime import datetime
 import requests
 import json
@@ -12,6 +12,14 @@ from airflow.exceptions import AirflowSkipException
 
 # S3 bucket name (configured via docker-compose environment variable)
 BUCKET_NAME = os.environ["BUCKET_NAME"]
+
+# Only keep the Mexico states used in downstream avocado/tomato features
+TARGET_STATES = [
+    "Sinaloa",
+    "Michoacán",
+    "Jalisco",
+    "Estado de México",
+]
 
 
 def save_bronze_task():
@@ -100,10 +108,11 @@ def transform_to_silver():
 
     s3 = boto3.client("s3")
 
-    # Bronze prefix where raw ingestion files are stored
-    bronze_prefix = "bronze/mexico_weather/"
+    # Bronze prefix where current-year raw ingestion files are stored
+    current_year = datetime.now().strftime("%Y")
+    bronze_prefix = f"bronze/mexico_weather/year={current_year}/"
 
-    print("Searching latest Bronze partition...")
+    print("Searching current-year Bronze partitions...")
 
     # List all objects under the Bronze prefix
     resp = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=bronze_prefix)
@@ -111,25 +120,24 @@ def transform_to_silver():
     if "Contents" not in resp:
         raise Exception("No Bronze data found")
 
-    # Identify the latest raw.json file
+    # Identify all current-year raw.json files
     bronze_files = [
         obj["Key"] for obj in resp["Contents"]
         if obj["Key"].endswith("raw.json")
     ]
 
-    latest_key = sorted(bronze_files)[-1]
+    if not bronze_files:
+        raise Exception(f"No Bronze data found under {bronze_prefix}")
 
-    print(f"Reading Bronze file: s3://{BUCKET_NAME}/{latest_key}")
-
-    # Load Bronze JSON file
-    obj = s3.get_object(Bucket=BUCKET_NAME, Key=latest_key)
-    data = json.loads(obj["Body"].read())
+    frames = []
+    for bronze_key in sorted(bronze_files):
+        print(f"Reading Bronze file: s3://{BUCKET_NAME}/{bronze_key}")
+        obj = s3.get_object(Bucket=BUCKET_NAME, Key=bronze_key)
+        data = json.loads(obj["Body"].read())
+        frames.append(pd.DataFrame(data))
 
     # Convert JSON records into pandas DataFrame
-    df = pd.DataFrame(data)
-
-    print("Raw sample:")
-    print(df.head())
+    df = pd.concat(frames, ignore_index=True)
 
     # Standardize column names
     df = df.rename(columns={
@@ -152,13 +160,12 @@ def transform_to_silver():
 
     # Replace aggregated "Nacional" label with "Mexico"
     df["STATE"] = df["STATE"].replace({"Nacional": "Mexico"})
-
-    # Extract partition values from date column
-    year = df["PERIOD"].dt.strftime("%Y").iloc[0]
-    month = df["PERIOD"].dt.strftime("%m").iloc[0]
+    df = df[df["STATE"].isin(TARGET_STATES)].copy()
+    year = current_year
 
     # Convert date to string for storage consistency
     df["PERIOD"] = df["PERIOD"].dt.strftime("%Y-%m-%d")
+    df = df.sort_values(["PERIOD", "STATE"]).reset_index(drop=True)
 
     print("Cleaned sample:")
     print(df.head())
@@ -170,10 +177,7 @@ def transform_to_silver():
     df.to_parquet(buffer, index=False)
 
     # Silver storage path
-    silver_key = (
-        f"silver/mexico_weather/"
-        f"year={year}/month={month}/data.parquet"
-    )
+    silver_key = f"silver/mexico_weather/year={year}/data.parquet"
 
     # Upload transformed dataset to Silver layer
     s3.put_object(
