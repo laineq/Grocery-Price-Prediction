@@ -5,7 +5,6 @@ from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime
 from io import BytesIO
 import boto3
-import json
 import os
 import pandas as pd
 

@@ -29,7 +29,7 @@ TOMATO_LAGS = {
     "import_qty": 0,
 }
 
-TARGET_START = "2017-01"
+START_DATE = "2017-01"
 END_DATE = "2025-12"
 
 
@@ -136,7 +136,7 @@ def build_avocado_gold_features(
         avocado_features.set_index("date"),
         AVOCADO_LAGS,
     )
-    avocado_final = avocado_lagged.loc[avocado_lagged.index >= TARGET_START].dropna()
+    avocado_final = avocado_lagged.loc[avocado_lagged.index >= START_DATE].dropna()
     avocado_final = avocado_final.join(
         avocado_target.set_index("date"),
         how="inner",
@@ -186,7 +186,7 @@ def build_tomato_gold_features(
         tomato_features.set_index("date"),
         TOMATO_LAGS,
     )
-    tomato_final = tomato_lagged.loc[tomato_lagged.index >= TARGET_START].dropna()
+    tomato_final = tomato_lagged.loc[tomato_lagged.index >= START_DATE].dropna()
     tomato_final = tomato_final.join(
         tomato_target.set_index("date"),
         how="inner",

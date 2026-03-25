@@ -18,15 +18,15 @@ from urllib3.util.retry import Retry
 BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 # Current-year dataset metadata
-YEAR = 2026
+CURRENT_YEAR = 2026
 ZIP_URL = (
     "https://www150.statcan.gc.ca/n1/pub/71-607-x/2021004/zip/"
-    f"CIMT-CICM_Imp_{YEAR}.zip"
+    f"CIMT-CICM_Imp_{CURRENT_YEAR}.zip"
 )
 
 # Bronze naming convention
-ZIP_FILENAME = f"CIMT-CICM_Imp_{YEAR}.zip"
-BRONZE_PREFIX = f"bronze/canadian_agricultural_import/year={YEAR}/"
+ZIP_FILENAME = f"CIMT-CICM_Imp_{CURRENT_YEAR}.zip"
+BRONZE_PREFIX = f"bronze/canadian_agricultural_import/year={CURRENT_YEAR}/"
 
 # Product codes used for Silver transformations
 AVOCADO_HS6 = "080440"
@@ -64,13 +64,13 @@ def find_latest_csv_member(members):
     # whenever Statistics Canada publishes another month
     matching_members = sorted(
         name for name in members
-        if os.path.basename(name).startswith(f"ODPFN015_{YEAR}")
+        if os.path.basename(name).startswith(f"ODPFN015_{CURRENT_YEAR}")
         and name.lower().endswith(".csv")
     )
 
     if not matching_members:
         raise FileNotFoundError(
-            f"No CSV starting with ODPFN015_{YEAR} found in ZIP archive"
+            f"No CSV starting with ODPFN015_{CURRENT_YEAR} found in ZIP archive"
         )
 
     return matching_members[-1]
@@ -82,7 +82,7 @@ def save_bronze_task():
     to Bronze only when a new monthly ODPFN015 CSV appears.
     """
 
-    print(f"Downloading ZIP file for {YEAR}: {ZIP_URL}")
+    print(f"Downloading ZIP file for {CURRENT_YEAR}: {ZIP_URL}")
 
     session = build_retry_session()
     buffer = BytesIO()
@@ -95,11 +95,11 @@ def save_bronze_task():
                 buffer.write(chunk)
 
     zip_bytes = buffer.getvalue()
-    print(f"Downloaded ZIP size for {YEAR}: {len(zip_bytes):,} bytes")
+    print(f"Downloaded ZIP size for {CURRENT_YEAR}: {len(zip_bytes):,} bytes")
 
     with ZipFile(BytesIO(zip_bytes)) as zip_file:
         members = zip_file.namelist()
-        print(f"ZIP contains {len(members)} files for {YEAR}")
+        print(f"ZIP contains {len(members)} files for {CURRENT_YEAR}")
 
         target_member = find_latest_csv_member(members)
         target_csv_filename = os.path.basename(target_member)
@@ -164,13 +164,16 @@ def transform_to_silver():
         "Quantity/Quantité",
     ]
 
-    print(f"Searching latest Bronze CSV for {YEAR}: s3://{BUCKET_NAME}/{BRONZE_PREFIX}")
+    print(
+        f"Searching latest Bronze CSV for {CURRENT_YEAR}: "
+        f"s3://{BUCKET_NAME}/{BRONZE_PREFIX}"
+    )
 
     resp = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=BRONZE_PREFIX)
     csv_keys = sorted(
         obj["Key"] for obj in resp.get("Contents", [])
         if obj["Key"].lower().endswith(".csv")
-        and os.path.basename(obj["Key"]).startswith(f"ODPFN015_{YEAR}")
+        and os.path.basename(obj["Key"]).startswith(f"ODPFN015_{CURRENT_YEAR}")
     )
 
     if not csv_keys:
@@ -240,7 +243,7 @@ def transform_to_silver():
     avocado_df.to_parquet(avocado_buffer, index=False)
     avocado_key = (
         f"silver/canadian_agricultural_import/"
-        f"avocado/year={YEAR}/data.parquet"
+        f"avocado/year={CURRENT_YEAR}/data.parquet"
     )
     s3.put_object(
         Bucket=BUCKET_NAME,
@@ -262,7 +265,7 @@ def transform_to_silver():
     tomato_df.to_parquet(tomato_buffer, index=False)
     tomato_key = (
         f"silver/canadian_agricultural_import/"
-        f"tomato/year={YEAR}/data.parquet"
+        f"tomato/year={CURRENT_YEAR}/data.parquet"
     )
     s3.put_object(
         Bucket=BUCKET_NAME,
