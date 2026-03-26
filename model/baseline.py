@@ -11,7 +11,6 @@ def run_baseline_cv(
     seasonal_period: int = 12,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     rows: list[dict] = []
-    fold_metrics_rows: list[dict] = []
 
     y = df[target_column]
     dates = df["date"]
@@ -43,39 +42,19 @@ def run_baseline_cv(
                 }
             )
 
-        fold_actual = y.iloc[test_idx].reset_index(drop=True)
-        naive_pred = pd.Series(np.full(len(test_idx), naive_value))
-        seasonal_pred = pd.Series(np.full(len(test_idx), seasonal_value))
-
-        naive_metrics = compute_metrics(fold_actual, naive_pred)
-        fold_metrics_rows.append(
-            {
-                "fold": fold_id,
-                "model": "baseline_naive",
-                **naive_metrics,
-            }
-        )
-
-        seasonal_metrics = compute_metrics(fold_actual, seasonal_pred)
-        fold_metrics_rows.append(
-            {
-                "fold": fold_id,
-                "model": "baseline_seasonal_naive",
-                **seasonal_metrics,
-            }
-        )
-
     predictions_df = pd.DataFrame(rows)
-    fold_metrics_df = pd.DataFrame(fold_metrics_rows)
-    summary_df = (
-        fold_metrics_df.groupby("model", as_index=False)
-        .agg(
-            mae=("mae", "mean"),
-            rmse=("rmse", "mean"),
-            mape=("mape", "mean"),
-            n_obs=("n_obs", "mean"),
-            n_folds=("fold", "nunique"),
+    summary_rows: list[dict] = []
+    for model_name, model_predictions in predictions_df.groupby("model"):
+        metrics = compute_metrics(model_predictions["actual"], model_predictions["prediction"])
+        summary_rows.append(
+            {
+                "model": model_name,
+                "mae": metrics["mae"],
+                "rmse": metrics["rmse"],
+                "mape": metrics["mape"],
+                "n_obs": metrics["n_obs"],
+                "n_folds": int(model_predictions["fold"].nunique()),
+            }
         )
-    )
-    summary_df["n_obs"] = summary_df["n_obs"].round().astype("Int64")
+    summary_df = pd.DataFrame(summary_rows)
     return predictions_df, summary_df

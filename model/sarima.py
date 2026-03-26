@@ -87,7 +87,6 @@ def run_sarima_cv(
     dates = df["date"]
 
     rows: list[dict] = []
-    fold_metrics_rows: list[dict] = []
 
     for fold_id, (train_idx, test_idx) in enumerate(folds, start=1):
         train_series = y_fit.iloc[train_idx]
@@ -123,31 +122,18 @@ def run_sarima_cv(
                 }
             )
 
-        fold_actual = y_actual.iloc[test_idx].reset_index(drop=True)
-        if use_log:
-            fold_prediction = pd.Series(np.exp(forecast_values))
-        else:
-            fold_prediction = pd.Series(forecast_values)
-        fold_metrics = compute_metrics(fold_actual, fold_prediction)
-        fold_metrics_rows.append(
-            {
-                "fold": fold_id,
-                "model": model_name,
-                **fold_metrics,
-            }
-        )
-
     predictions_df = pd.DataFrame(rows)
-    fold_metrics_df = pd.DataFrame(fold_metrics_rows)
-    summary_df = (
-        fold_metrics_df.groupby("model", as_index=False)
-        .agg(
-            mae=("mae", "mean"),
-            rmse=("rmse", "mean"),
-            mape=("mape", "mean"),
-            n_obs=("n_obs", "mean"),
-            n_folds=("fold", "nunique"),
-        )
+    metrics = compute_metrics(predictions_df["actual"], predictions_df["prediction"])
+    summary_df = pd.DataFrame(
+        [
+            {
+                "model": model_name,
+                "mae": metrics["mae"],
+                "rmse": metrics["rmse"],
+                "mape": metrics["mape"],
+                "n_obs": metrics["n_obs"],
+                "n_folds": int(predictions_df["fold"].nunique()),
+            }
+        ]
     )
-    summary_df["n_obs"] = summary_df["n_obs"].round().astype("Int64")
     return predictions_df, summary_df
