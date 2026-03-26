@@ -1,0 +1,3 @@
+product,model,adf_statistic,adf_pvalue,adf_critical_1pct,adf_critical_5pct,adf_critical_10pct,adf_nobs
+avocado,sarima_raw,-2.4572850084767617,0.12621617276917724,-3.497501033,-2.89090644,-2.5824349,108
+avocado,sarima_log,-2.507495251577933,0.11366128395642466,-3.497501033,-2.89090644,-2.5824349,108

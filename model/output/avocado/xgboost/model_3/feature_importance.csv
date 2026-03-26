@@ -1,0 +1,12 @@
+feature,importance
+lag1,0.3309506
+lag2,0.14665605
+PRECIPITATION_MM_lag_4,0.118895546
+lag3,0.070394665
+lag6,0.06498733
+integrated_gas_price_lag_0,0.055593304
+MEAN_C_lag_2,0.048956014
+lag12,0.047891777
+MXN_CAD_lag_0,0.040709276
+USD_CAD_lag_0,0.03883783
+import_qty_lag_2,0.036127627

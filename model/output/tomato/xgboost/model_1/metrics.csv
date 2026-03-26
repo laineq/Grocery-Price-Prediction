@@ -1,0 +1,2 @@
+product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape
+tomato,xg-boost model_1,baseline,only target lag,model_1_target_lags_only,0.19898140271504722,0.24545079262879582,4.354901165329583

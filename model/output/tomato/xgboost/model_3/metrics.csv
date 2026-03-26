@@ -1,0 +1,2 @@
+product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape
+tomato,xg-boost model_3,full feature engineering,target lag + external lagged,model_3_full_selective_with_target_lags,0.19682496971554223,0.23452990852533234,4.3113641957795625

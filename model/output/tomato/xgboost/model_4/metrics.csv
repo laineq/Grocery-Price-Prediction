@@ -1,0 +1,2 @@
+product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape
+tomato,xg-boost model_4,core feature selection,selected lagged target and external (based on importance plot),model_4_reduced_selective_features,0.19171516683366563,0.2306351703633725,4.182028168252824

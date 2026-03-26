@@ -1,0 +1,14 @@
+feature,importance
+lag12,0.3482545
+month,0.14432624
+PRECIPITATION_MM,0.13211463
+lag1,0.05672753
+tomato_import_partner_usa_qty,0.044073015
+MEAN_C,0.03945274
+tomato_import_partner_mexico_qty,0.03928394
+lag3,0.03912068
+MXN_CAD,0.038213994
+USD_CAD,0.03525447
+lag2,0.029349918
+lag6,0.02843346
+integrated_gas_price,0.025394874
