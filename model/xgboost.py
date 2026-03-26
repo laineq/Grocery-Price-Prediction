@@ -27,6 +27,7 @@ except ImportError:
 
 from cv import create_expanding_window_folds
 from metrics import compute_metrics
+from comparison_plots import generate_comparison_plots
 
 DATE_COLUMN = "date"
 LAG_FEATURES = [1, 2, 3, 6, 12]
@@ -465,6 +466,8 @@ def run_product_models(product_name: str, config: dict) -> None:
         product_metrics_path = OUTPUT_ROOT / product_name / "xgboost" / "metrics.csv"
         product_metrics_path.parent.mkdir(parents=True, exist_ok=True)
         product_metrics_df.to_csv(product_metrics_path, index=False)
+
+    generate_comparison_plots(OUTPUT_ROOT, product_name)
 
 
 def main() -> None:

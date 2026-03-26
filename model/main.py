@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from baseline import run_baseline_cv
+from comparison_plots import generate_comparison_plots
 from cv import create_expanding_window_folds
 from data_preprocessing import load_price_data
 from sarima import run_sarima_cv, save_diagnostics
@@ -86,6 +87,8 @@ def run_product(product_name: str, file_name: str) -> None:
     quality_df = pd.DataFrame([quality_report])
     quality_df.insert(0, "product", product_name)
     quality_df.to_csv(product_output_dir / "data_quality_report.csv", index=False)
+
+    generate_comparison_plots(OUTPUT_ROOT, product_name)
 
 
 def main() -> None:
