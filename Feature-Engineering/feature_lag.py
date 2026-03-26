@@ -233,33 +233,102 @@ def prepare_final_features(feature_df, lags_df, target_start='2017-01-01'):
     cols_to_drop = [row.Feature for row in lags_df.itertuples() 
                     if row.Feature in final_features.columns]
     final_features = final_features.drop(columns=cols_to_drop)
-    
-    return final_features.dropna()
 
+    return final_features.dropna()
 
 # ============================
 # 5. Execute and Save (The Bulletproof Method)
 # ============================
 
-# Step 1: Separate your target from your features (if they are currently in the same dataframe)
-tom_features_only = df_tom_imp.join(tom_weather_index, how='inner').join(df_gas, how='inner').join(df_fx, how='inner')
-tom_target_only = df_tom_price
+# 1. Separate your target from your features (if they are currently in the same dataframe)
+tom_features_only = df_tom_imp.join(tom_weather_index, how='outer')\
+                              .join(df_gas, how='outer')\
+                              .join(df_fx, how='outer')
 
-avo_features_only = df_avo_imp.join(avo_weather_index, how='inner').join(df_gas, how='inner').join(df_fx, how='inner')
+avo_features_only = df_avo_imp.join(avo_weather_index, how='outer')\
+                              .join(df_gas, how='outer')\
+                              .join(df_fx, how='outer')
+
+
+tom_target_only = df_tom_price
 avo_target_only = df_avo_price
 
+# 2. Get today's actual, real-world date
+today = pd.Timestamp.now()
+target_prediction_date = today.replace(day=1) + pd.DateOffset(months=1)
 
-# Step 2: Apply the lag function ONLY to the features. 
+print(f"Today is: {today.strftime('%Y-%m')}")
+print(f"Stretching dataset to predict: {target_prediction_date.strftime('%Y-%m')}")
+
+# 3. Create a strict monthly calendar that forces the timeline to reach next month
+future_timeline = pd.date_range(start=tom_features_only.index.min(), 
+                                end=target_prediction_date, 
+                                freq='MS')
+
+# 4. Apply the new calendar and Fill the missing data
+tom_features_only = tom_features_only.reindex(future_timeline)
+avo_features_only = avo_features_only.reindex(future_timeline)
+
+# A. Seasonal Fill (Same month, last year) for Weather and Imports
+# (Update these strings to exactly match your dataframe column names!)
+tom_seasonal_cols = ['MEAN_C', 'PRECIPITATION_MM', 'import_qty'] 
+avo_seasonal_cols = ['MEAN_C', 'PRECIPITATION_MM', 'import_qty']
+
+for col in avo_seasonal_cols:
+    if col in avo_features_only.columns:
+        # Apply shift(12) up to 2 times to cover any remaining gaps
+        for _ in range(2):
+            avo_features_only[col] = avo_features_only[col].fillna(
+                avo_features_only[col].shift(12)
+            )
+for col in tom_seasonal_cols:
+    if col in tom_features_only.columns:
+        # Apply shift(12) up to 2 times to cover any remaining gaps
+        for _ in range(2):
+            tom_features_only[col] = tom_features_only[col].fillna(
+                tom_features_only[col].shift(12)
+            )
+
+# B. Forward-fill ONLY remaining gaps in non-seasonal columns (gas, FX)
+non_seasonal_cols = [c for c in tom_features_only.columns if c not in tom_seasonal_cols]
+tom_features_only[non_seasonal_cols] = tom_features_only[non_seasonal_cols].ffill()
+
+non_seasonal_cols = [c for c in avo_features_only.columns if c not in avo_seasonal_cols]
+avo_features_only[non_seasonal_cols] = avo_features_only[non_seasonal_cols].ffill()
+
+# 5. Apply the lag function ONLY to the features. 
 tom_lagged_features = prepare_final_features(tom_features_only, tom_results, target_start='2017-01')
 avo_lagged_features = prepare_final_features(avo_features_only, avo_results, target_start='2017-01')
 
-# Step 3: Merge the target variable back onto the safely lagged features
+# Merge the target variable back onto the safely lagged features
 tom_final = tom_lagged_features.join(tom_target_only, how='inner')
 avo_final = avo_lagged_features.join(avo_target_only, how='inner')
 
 tom_final.index = tom_final.index.strftime('%Y-%m')
 avo_final.index = avo_final.index.strftime('%Y-%m')
 
-# Step 4: Save to CSV without the date index
+# Save to CSV without the date index
 tom_final.to_csv('tomato_final_selective_log.csv', index=True, index_label='Date')
 avo_final.to_csv('avocado_final_selective_log.csv', index=True, index_label='Date')
+
+# ==========================================
+# 6. EXPORT FUTURE FEATURES FOR PREDICTION
+# ==========================================
+# Format Datetime so the comparison works perfectly
+tom_lagged_features.index = pd.to_datetime(tom_lagged_features.index)
+tom_target_only.index = pd.to_datetime(tom_target_only.index)
+avo_lagged_features.index = pd.to_datetime(avo_lagged_features.index)
+avo_target_only.index = pd.to_datetime(avo_target_only.index)
+
+tom_future = tom_lagged_features.loc[tom_lagged_features.index > tom_target_only.index.max()].copy()
+avo_future = avo_lagged_features.loc[avo_lagged_features.index > avo_target_only.index.max()].copy()
+
+tom_future.index = tom_future.index.strftime('%Y-%m')
+avo_future.index = avo_future.index.strftime('%Y-%m')
+
+# Save to CSV
+tom_future.to_csv('tomato_future_features.csv', index=True, index_label='Date')
+avo_future.to_csv('avocado_future_features.csv', index=True, index_label='Date')
+
+print(f" Tomato Future Rows exported: {len(tom_future)}")
+print(f" Avocado Future Rows exported: {len(avo_future)}")
