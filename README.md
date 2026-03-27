@@ -111,7 +111,7 @@ We plan to build:
 This will enable users to easily explore model outputs and gain insights into price dynamics.
 
 ## Team Members
-Joohyun Park
-Jiayi Li
-Hongrui Qu
-Tracy Cui
+- Joohyun Park
+- Jiayi Li
+- Hongrui Qu
+- Tracy Cui
