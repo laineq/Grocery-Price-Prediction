@@ -109,3 +109,9 @@ We plan to build:
   - feature importance / impacts  
 
 This will enable users to easily explore model outputs and gain insights into price dynamics.
+
+## Team Members
+Joohyun Park
+Jiayi Li
+Hongrui Qu
+Tracy Cui
