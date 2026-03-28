@@ -103,8 +103,20 @@ def apply_lag_table(df, lag_map):
     result = pd.DataFrame(index=df.index)
 
     for column, lag in lag_map.items():
-        result[column] = df[column].shift(lag) if lag > 0 else df[column]
+        lagged_column = f"{column}_lag_{lag}"
+        result[lagged_column] = df[column].shift(lag) if lag > 0 else df[column]
 
+    return result
+
+
+def cast_feature_columns_to_float(df):
+    """
+    Cast all numeric feature/target columns to float for a consistent Gold schema.
+    """
+
+    result = df.copy()
+    numeric_columns = [column for column in result.columns if column != "Date"]
+    result[numeric_columns] = result[numeric_columns].astype(float)
     return result
 
 
@@ -143,16 +155,10 @@ def build_avocado_gold_features(
     ).reset_index()
     avocado_final = avocado_final[avocado_final["date"] <= END_DATE].copy()
 
-    return avocado_final.rename(columns={
+    avocado_final = avocado_final.rename(columns={
         "date": "Date",
-        "MEAN_C": "Mean Temperature",
-        "PRECIPITATION_MM": "Precipitation",
-        "MXN_CAD": "MXNCAD Exchange Rate",
-        "USD_CAD": "USDCAD Exchange Rate",
-        "integrated_gas_price": "Integrated Gas Price",
-        "import_qty": "Import Quantity",
-        "price_adjusted": "Avocado Price",
     })
+    return cast_feature_columns_to_float(avocado_final)
 
 
 def build_tomato_gold_features(
@@ -193,16 +199,10 @@ def build_tomato_gold_features(
     ).reset_index()
     tomato_final = tomato_final[tomato_final["date"] <= END_DATE].copy()
 
-    return tomato_final.rename(columns={
+    tomato_final = tomato_final.rename(columns={
         "date": "Date",
-        "MEAN_C": "Mean Temperature",
-        "PRECIPITATION_MM": "Precipitation",
-        "MXN_CAD": "MXNCAD Exchange Rate",
-        "USD_CAD": "USDCAD Exchange Rate",
-        "integrated_gas_price": "Integrated Gas Price",
-        "import_qty": "Import Quantity",
-        "price_adjusted": "Tomato Price",
     })
+    return cast_feature_columns_to_float(tomato_final)
 
 
 def transform_to_gold():
@@ -258,24 +258,24 @@ def transform_to_gold():
     print(tomato_final.head())
 
     avocado_buffer = BytesIO()
-    avocado_final.to_parquet(avocado_buffer, index=False)
+    avocado_final.to_csv(avocado_buffer, index=False)
     s3.put_object(
         Bucket=BUCKET_NAME,
-        Key="gold/avocado_features.parquet",
+        Key="gold/avocado_features.csv",
         Body=avocado_buffer.getvalue(),
-        ContentType="application/octet-stream",
+        ContentType="text/csv",
     )
-    print(f"Uploaded Gold: s3://{BUCKET_NAME}/gold/avocado_features.parquet")
+    print(f"Uploaded Gold: s3://{BUCKET_NAME}/gold/avocado_features.csv")
 
     tomato_buffer = BytesIO()
-    tomato_final.to_parquet(tomato_buffer, index=False)
+    tomato_final.to_csv(tomato_buffer, index=False)
     s3.put_object(
         Bucket=BUCKET_NAME,
-        Key="gold/tomato_features.parquet",
+        Key="gold/tomato_features.csv",
         Body=tomato_buffer.getvalue(),
-        ContentType="application/octet-stream",
+        ContentType="text/csv",
     )
-    print(f"Uploaded Gold: s3://{BUCKET_NAME}/gold/tomato_features.parquet")
+    print(f"Uploaded Gold: s3://{BUCKET_NAME}/gold/tomato_features.csv")
 
 
 # Default DAG configuration
