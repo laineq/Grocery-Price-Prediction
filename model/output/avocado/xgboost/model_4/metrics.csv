@@ -1,2 +1,2 @@
-product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape
-avocado,xg-boost model_4,core feature selection,selected lagged target and external (based on importance plot),model_4_reduced_selective_features,0.1162913570139143,0.13055674690951627,7.264316944536965
+product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape,directional_accuracy
+avocado,xg-boost model_4,core feature selection,selected lagged target and external (based on importance plot),model_4_reduced_selective_features,0.1162913570139143,0.13055674690951627,7.264316944536965,0.42857142857142855

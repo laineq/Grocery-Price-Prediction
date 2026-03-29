@@ -2,10 +2,26 @@ import numpy as np
 import pandas as pd
 
 
+def compute_directional_accuracy(actual: pd.Series, predicted: pd.Series) -> float:
+    direction_df = pd.DataFrame({"actual": actual, "predicted": predicted}).dropna().copy()
+    if len(direction_df) < 2:
+        return np.nan
+
+    direction_df["actual_diff"] = direction_df["actual"].diff()
+    direction_df["predicted_diff"] = direction_df["predicted"].diff()
+    direction_df = direction_df.dropna(subset=["actual_diff", "predicted_diff"]).copy()
+
+    if direction_df.empty:
+        return np.nan
+
+    correct_direction = np.sign(direction_df["actual_diff"]) == np.sign(direction_df["predicted_diff"])
+    return float(correct_direction.mean())
+
+
 def compute_metrics(actual: pd.Series, predicted: pd.Series) -> dict:
     metric_df = pd.DataFrame({"actual": actual, "predicted": predicted}).dropna().copy()
     if metric_df.empty:
-        return {"mae": np.nan, "rmse": np.nan, "mape": np.nan, "n_obs": 0}
+        return {"mae": np.nan, "rmse": np.nan, "mape": np.nan, "directional_accuracy": np.nan, "n_obs": 0}
 
     errors = metric_df["actual"] - metric_df["predicted"]
     mae = errors.abs().mean()
@@ -21,5 +37,6 @@ def compute_metrics(actual: pd.Series, predicted: pd.Series) -> dict:
         "mae": float(mae),
         "rmse": float(rmse),
         "mape": float(mape) if not np.isnan(mape) else np.nan,
+        "directional_accuracy": compute_directional_accuracy(metric_df["actual"], metric_df["predicted"]),
         "n_obs": int(len(metric_df)),
     }

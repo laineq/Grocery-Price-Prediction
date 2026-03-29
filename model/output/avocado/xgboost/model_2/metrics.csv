@@ -1,2 +1,2 @@
-product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape
-avocado,xg-boost model_2,+ external,target lag + external (non-lagged),model_2_target_lags_plus_external,0.11404306664186364,0.13197206504981787,7.081880368158025
+product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape,directional_accuracy
+avocado,xg-boost model_2,+ external,target lag + external (non-lagged),model_2_target_lags_plus_external,0.11404306664186364,0.13197206504981787,7.081880368158025,0.36363636363636365

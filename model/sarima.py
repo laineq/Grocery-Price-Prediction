@@ -131,6 +131,7 @@ def run_sarima_cv(
                 "mae": metrics["mae"],
                 "rmse": metrics["rmse"],
                 "mape": metrics["mape"],
+                "directional_accuracy": metrics["directional_accuracy"],
                 "n_obs": metrics["n_obs"],
                 "n_folds": int(predictions_df["fold"].nunique()),
             }

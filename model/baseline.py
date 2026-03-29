@@ -52,6 +52,7 @@ def run_baseline_cv(
                 "mae": metrics["mae"],
                 "rmse": metrics["rmse"],
                 "mape": metrics["mape"],
+                "directional_accuracy": metrics["directional_accuracy"],
                 "n_obs": metrics["n_obs"],
                 "n_folds": int(model_predictions["fold"].nunique()),
             }

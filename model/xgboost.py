@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+#py model/xgboost.py
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
 if str(CURRENT_DIR) not in sys.path:
@@ -332,6 +333,7 @@ def _run_expanding_window_cv(
                 "mae": metric_values["mae"],
                 "rmse": metric_values["rmse"],
                 "mape": metric_values["mape"],
+                "directional_accuracy": metric_values["directional_accuracy"],
             }
         ]
     )
@@ -461,7 +463,7 @@ def run_product_models(product_name: str, config: dict) -> None:
         product_metrics_df = pd.concat(metrics_rows, ignore_index=True)
         product_metrics_df.insert(0, "product", product_name)
         product_metrics_df = product_metrics_df[
-            ["product", "xgboost_model", "feature_lag", "mae", "rmse", "mape"]
+            ["product", "xgboost_model", "feature_lag", "mae", "rmse", "mape", "directional_accuracy"]
         ]
         product_metrics_path = OUTPUT_ROOT / product_name / "xgboost" / "metrics.csv"
         product_metrics_path.parent.mkdir(parents=True, exist_ok=True)

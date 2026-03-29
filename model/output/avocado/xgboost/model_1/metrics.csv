@@ -1,2 +1,2 @@
-product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape
-avocado,xg-boost model_1,baseline,only target lag,model_1_target_lags_only,0.10699605597390066,0.12218150122168123,6.663773707852096
+product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape,directional_accuracy
+avocado,xg-boost model_1,baseline,only target lag,model_1_target_lags_only,0.10699605597390066,0.12218150122168123,6.663773707852096,0.45714285714285713

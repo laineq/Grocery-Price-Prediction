@@ -1,5 +1,5 @@
-product,xgboost_model,feature_lag,mae,rmse,mape
-tomato,xg-boost model_1,only target lag,0.19898140271504722,0.24545079262879582,4.354901165329583
-tomato,xg-boost model_2,target lag + external (non-lagged),0.17266206741333012,0.2173158278231214,3.8131166975050763
-tomato,xg-boost model_3,target lag + external lagged,0.19682496971554223,0.23452990852533234,4.3113641957795625
-tomato,xg-boost model_4,selected lagged target and external (based on importance plot),0.19171516683366563,0.2306351703633725,4.182028168252824
+product,xgboost_model,feature_lag,mae,rmse,mape,directional_accuracy
+tomato,xg-boost model_1,only target lag,0.19898140271504722,0.24545079262879582,4.354901165329583,0.7142857142857143
+tomato,xg-boost model_2,target lag + external (non-lagged),0.17266206741333012,0.2173158278231214,3.8131166975050763,0.696969696969697
+tomato,xg-boost model_3,target lag + external lagged,0.19682496971554223,0.23452990852533234,4.3113641957795625,0.7142857142857143
+tomato,xg-boost model_4,selected lagged target and external (based on importance plot),0.19171516683366563,0.2306351703633725,4.182028168252824,0.6857142857142857
