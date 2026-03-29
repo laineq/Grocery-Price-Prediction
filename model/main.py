@@ -13,6 +13,7 @@ CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
 DATA_DIR = PROJECT_ROOT / "AdjustedData"
 OUTPUT_ROOT = CURRENT_DIR / "output"
+PREDICTION_RESULT_DIR = PROJECT_ROOT / "prediction-result"
 
 PRODUCT_FILES = {
     "tomato": "tomato_price_adjusted.csv",
@@ -23,7 +24,35 @@ INITIAL_WINDOW = 60
 HORIZON = 1
 
 
-def run_product(product_name: str, file_name: str) -> None:
+def _export_dashboard_predictions(all_predictions_df: pd.DataFrame) -> None:
+    PREDICTION_RESULT_DIR.mkdir(parents=True, exist_ok=True)
+
+    model_exports = {
+        "naive_baseline_predictions.csv": "baseline_naive",
+        "sarima_no_external_indicator_predictions.csv": "sarima_raw",
+    }
+
+    export_df = all_predictions_df.copy()
+    export_df["date"] = pd.to_datetime(export_df["date"], errors="coerce")
+    export_df["prediction"] = pd.to_numeric(export_df["prediction"], errors="coerce")
+    products = sorted(export_df["product"].dropna().unique())
+
+    for product_name in products:
+        product_output_dir = PREDICTION_RESULT_DIR / product_name
+        product_output_dir.mkdir(parents=True, exist_ok=True)
+
+        product_df = export_df[export_df["product"] == product_name]
+        for output_file, model_name in model_exports.items():
+            model_df = (
+                product_df[product_df["model"] == model_name][["date", "prediction"]]
+                .dropna(subset=["date", "prediction"])
+                .sort_values("date")
+            )
+            model_df["date"] = model_df["date"].dt.strftime("%Y-%m")
+            model_df.to_csv(product_output_dir / output_file, index=False)
+
+
+def run_product(product_name: str, file_name: str) -> pd.DataFrame:
     product_output_dir = OUTPUT_ROOT / product_name
     product_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -89,12 +118,16 @@ def run_product(product_name: str, file_name: str) -> None:
     quality_df.to_csv(product_output_dir / "data_quality_report.csv", index=False)
 
     generate_comparison_plots(OUTPUT_ROOT, product_name)
+    return predictions_df
 
 
 def main() -> None:
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    all_predictions: list[pd.DataFrame] = []
     for product_name, file_name in PRODUCT_FILES.items():
-        run_product(product_name, file_name)
+        all_predictions.append(run_product(product_name, file_name))
+
+    _export_dashboard_predictions(pd.concat(all_predictions, ignore_index=True))
 
 
 if __name__ == "__main__":
