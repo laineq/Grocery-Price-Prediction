@@ -1,6 +1,7 @@
 import { DetailPage } from "@/components/detail-page";
-import { products } from "@/lib/data";
+import { getProductSummary } from "@/lib/data";
 
-export default function AvocadoPage() {
-  return <DetailPage product={products.avocado} />;
+export default async function AvocadoPage() {
+  const product = await getProductSummary("avocado");
+  return <DetailPage product={product} />;
 }

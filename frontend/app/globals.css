@@ -567,6 +567,13 @@ button {
   font-weight: 700;
 }
 
+.chart-readout__range {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .drivers {
   display: grid;
   gap: 22px;

@@ -1,9 +1,11 @@
 import { BottomNav } from "@/components/bottom-nav";
 import { BrandMark } from "@/components/branding";
 import { DashboardCard } from "@/components/dashboard-card";
-import { dashboardCards } from "@/lib/data";
+import { getDashboardProducts } from "@/lib/data";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const dashboardCards = await getDashboardProducts();
+
   return (
     <main className="screen">
       <div className="phone-shell">
@@ -14,7 +16,9 @@ export default function HomePage() {
         <section className="hero-block">
           <h1 className="hero-title">
             <span className="hero-title__line">Predicting</span>
-            <span className="hero-title__line hero-title__line--accent">April 2026</span>
+            <span className="hero-title__line hero-title__line--accent">
+              {dashboardCards[0]?.predictionMonth ?? "No prediction yet"}
+            </span>
             <span className="hero-title__line">price trends.</span>
           </h1>
           <p className="hero-subtitle">

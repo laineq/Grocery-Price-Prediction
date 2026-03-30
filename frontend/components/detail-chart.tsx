@@ -9,6 +9,8 @@ type ChartPoint = {
   date: string;
   price: number;
   forecast?: boolean;
+  lowerBound?: number;
+  upperBound?: number;
 };
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -242,6 +244,11 @@ export function DetailChart({ product }: { product: ProductSummary }) {
         <div className="chart-readout__value">
           {formatDate(active.date)} · C${active.price.toFixed(2)}
         </div>
+        {active.forecast && active.lowerBound !== undefined && active.upperBound !== undefined ? (
+          <div className="chart-readout__range">
+            Range: C${active.lowerBound.toFixed(2)} - C${active.upperBound.toFixed(2)}
+          </div>
+        ) : null}
       </div>
     </section>
   );
