@@ -115,3 +115,22 @@ This will enable users to easily explore model outputs and gain insights into pr
 - Jiayi Li
 - Hongrui Qu
 - Tracy Cui
+
+## Code List
+- Feature-Engineering
+  -- calculate_lag.py: Calculates correlations for ALL lags up to max_lag (12 months).
+     input: all the cleaned data from AdjustedData folder: avocado_price_adjusted.csv, tomato_price_adjusted.csv, avocado_import.csv, tomato_import.csv,                                                              mexico_weather_adjusted.csv, gas_price.csv, xrate_adjusted.csv
+     output: avocado_lag_results_manual.csv (all the selected lags)
+             tomato_lag_results_manual.csv
+             avocado_correlations_lag12.csv (all the correlations)
+             tomato_correlations_lag12.csv
+  -- feature_lag.py:
+     input: all the cleaned data from AdjustedData folder: avocado_price_adjusted.csv, tomato_price_adjusted.csv, avocado_import.csv, tomato_import.csv,                                                              mexico_weather_adjusted.csv, gas_price.csv, xrate_adjusted.csv
+     output: avocado_lag_results_manual.csv (all the selected lags)
+             tomato_lag_results_manual.csv
+             avocado_correlations_lag12.csv (all the correlations)
+             tomato_correlations_lag12.csv
+- model
+- 
+- 
+
