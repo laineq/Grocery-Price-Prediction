@@ -139,7 +139,17 @@ This will enable users to easily explore model outputs and gain insights into pr
          -  tomato_final_selective_log.csv (lagged tomato features with target variable; last row corresponds to the final observed price)
          -  avocado_future_features.csv (lagged avocado features for forecasting, covering periods after the last observed price to the prediction horizon)
          -  tomato_future_features.csv (lagged tomato features for forecasting, covering periods after the last observed price to the prediction horizon)
-- model
+- model: tTraining, evaluation, and prediction pipeline
+   -   sarimax_predict_future.py:Predicts the target price using the SARIMAX model
+     -  input: Outputs generated from feature_lag.py in the Feature-Engineering module
+        -  avocado_final_selective_log.csv
+        -  tomato_final_selective_log.csv
+        -  avocado_future_features.csv
+        -  tomato_future_features.csv
+     - output: Predicted prices along with confidence intervals
+        - avocado_sarima_predictions.csv
+        - tomato_sarima_predictions.csv
+- 
 - 
 - 
 
