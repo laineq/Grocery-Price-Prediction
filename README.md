@@ -148,12 +148,12 @@ This will enable users to easily explore model outputs and gain insights into pr
             -  tomato_final_selective_log.csv
             -  avocado_future_features.csv
             -  tomato_future_features.csv
-        - output: Predicted prices along with confidence intervals, saved in **sarimax-model-output** module
+        - output: Predicted prices along with confidence intervals, stored in **sarimax-model-output** module
           - avocado_sarima_predictions.csv
           - tomato_sarima_predictions.csv
     -   **sarimax_evaluation.py:Evaluate the SARIMAX model**
         -  input: Same datasets as sarimax_predict_future.py
-        - output: Historical predictions versus actual prices (last five years), including confidence intervals, stored in the sarimax-model-output module.
+        - output: Historical predictions versus actual prices (last five years), including confidence intervals, stored in **sarimax-model-output** module.
           - avocado_sarimax_cv_results.csv
           - tomato_sarimax_cv_results.csv
     
