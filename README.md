@@ -118,7 +118,7 @@ This will enable users to easily explore model outputs and gain insights into pr
 
 ---
 
-## Code List
+## Code Structure
 - **Feature-Engineering**
   -  **calculate_lag.py: Computes correlations between variables across all lag values up to a maximum lag of 12 months.**
      -  input: Cleaned datasets from the AdjustedData folder:
