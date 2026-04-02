@@ -82,9 +82,9 @@ for commodity in commodities:
         model = SARIMAX(
             endog=y_train, 
             exog=X_train,
-            order=(1, 1, 1),              
-            seasonal_order=(1, 1, 1, 12), 
-            enforce_stationarity=True,
+            order=(1, 0, 1),              
+            seasonal_order=(0, 1, 1, 12), 
+            enforce_stationarity=False,
             enforce_invertibility=True
         )
     results = model.fit(disp=False)
