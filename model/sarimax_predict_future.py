@@ -64,7 +64,7 @@ for commodity in commodities:
         cols_to_drop = ['MXN_CAD_lag_7'] # Use the exact column name in your lagged dataset
         X_train = X_train.drop(columns=[c for c in cols_to_drop if c in X_train.columns])
         
-    # 4. Train the Model on ALL historical data   
+    # 6. Train the Model on ALL historical data   
     scaler = StandardScaler()
     X_future = df_future[X_train.columns] # Ensure column order matches exactly
     X_train[X_train.columns] = scaler.fit_transform(X_train)
@@ -89,12 +89,12 @@ for commodity in commodities:
         )
     results = model.fit(disp=False)
         
-    # 5. Make the True Future Prediction
+    # 7. Make the True Future Prediction
     forecast_obj = results.get_forecast(steps=len(X_future), exog=X_future)
     future_predictions = forecast_obj.predicted_mean
     conf_int = forecast_obj.conf_int(alpha=0.50)
       
-    # 6. EXPORT PREDICTIONS TO CSV (Convert back from log scale if needed)
+    # 8. EXPORT PREDICTIONS TO CSV (Convert back from log scale if needed)
     if commodity in ['tomato']:
         # Reverse log transform
         future_predictions = np.exp(future_predictions)
@@ -105,7 +105,7 @@ for commodity in commodities:
         date_str = date.strftime('%Y-%m')
         print(f"   {date_str} | Estimated Price: ${pred:.2f} (Expected Range: ${lower:.2f} to ${upper:.2f})")
 
-    # 7. EXPORT PREDICTIONS TO CSV
+    # 9. EXPORT PREDICTIONS TO CSV
     final_output = pd.DataFrame({
         'Predicted_Price': future_predictions.values,
         'Lower_CI': conf_int.iloc[:, 0].values,
