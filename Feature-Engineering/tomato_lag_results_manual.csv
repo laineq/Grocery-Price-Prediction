@@ -1,0 +1,7 @@
+Feature,Optimal_Lag,Correlation,Logic
+MEAN_C,2,0.3059,Flowering/fruit set stage
+PRECIPITATION_MM,3,0.4029,Planting/early growth moisture
+import_qty,3,-0.3329,Supply chain pipeline lag
+USD_CAD,1,-0.1643,Delayed currency adjustment
+integrated_gas_price,1,0.1534,Logistics cost pass-through
+MXN_CAD,1,-0.1144,Short-term trade fluctuation

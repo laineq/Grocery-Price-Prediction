@@ -1,0 +1,7 @@
+Feature,Optimal_Lag,Correlation,Logic
+MEAN_C,0,0.3628,Immediate harvest/heat stress
+PRECIPITATION_MM,5,-0.3826,Mid-stage fruit bulking
+import_qty,0,-0.1741,Immediate supply/demand
+USD_CAD,0,0.2084,Real-time import costs
+integrated_gas_price,1,0.1806,Logistics cost pass-through
+MXN_CAD,7,0.2002,Seasonal contract renewals
