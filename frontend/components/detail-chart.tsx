@@ -13,6 +13,12 @@ type ChartPoint = {
   upperBound?: number;
 };
 
+type ChartPointWithCoords = ChartPoint & {
+  x: number;
+  y: number;
+  phase: "historical" | "delayed" | "forecast";
+};
+
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function formatDate(date: string) {
@@ -34,8 +40,22 @@ function getYBounds(points: ChartPoint[]) {
   return { min: min - pad, max: max + pad };
 }
 
+function getCurrentMonthKey() {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = `${now.getUTCMonth() + 1}`.padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function buildPath(points: ChartPointWithCoords[]) {
+  return points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+}
+
 export function DetailChart({ product }: { product: ProductSummary }) {
   const [range, setRange] = useState<RangeKey>("1Y");
+  const currentMonthKey = getCurrentMonthKey();
 
   const points = useMemo(() => {
     const count = rangeCount(range);
@@ -67,12 +87,30 @@ export function DetailChart({ product }: { product: ProductSummary }) {
       const x = padding.left + (points.length === 1 ? innerWidth / 2 : (innerWidth * index) / (points.length - 1));
       const normalized = (point.price - bounds.min) / (bounds.max - bounds.min || 1);
       const y = padding.top + innerHeight - normalized * innerHeight;
-      return { ...point, x, y };
+      const phase: ChartPointWithCoords["phase"] = !point.forecast
+        ? "historical"
+        : point.date <= currentMonthKey
+          ? "delayed"
+          : "forecast";
+      return { ...point, x, y, phase };
     });
 
-    const historical = mapped.filter((point) => !point.forecast);
-    const forecast = mapped.filter((point) => point.forecast);
+    const historical = mapped.filter((point) => point.phase === "historical");
+    const delayed = mapped.filter((point) => point.phase === "delayed");
+    const forecast = mapped.filter((point) => point.phase === "forecast");
     const activePoint = mapped.find((point) => point.date === active.date) ?? mapped[mapped.length - 1];
+
+    const delayedPathPoints =
+      delayed.length > 0
+        ? [historical[historical.length - 1], ...delayed].filter(Boolean) as ChartPointWithCoords[]
+        : [];
+    const forecastPathPoints =
+      forecast.length > 0
+        ? [
+            delayed[delayed.length - 1] ?? historical[historical.length - 1],
+            ...forecast,
+          ].filter(Boolean) as ChartPointWithCoords[]
+        : [];
 
     return {
       width,
@@ -80,26 +118,26 @@ export function DetailChart({ product }: { product: ProductSummary }) {
       padding,
       mapped,
       historical,
+      delayed,
       forecast,
-      activePoint
+      activePoint,
+      delayedPathPoints,
+      forecastPathPoints
     };
-  }, [active.date, points]);
+  }, [active.date, currentMonthKey, points]);
 
-  const solidPath = geometry.historical
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
-
-  const dashedPath = (() => {
-    if (geometry.forecast.length === 0) return "";
-    const pivot = geometry.historical[geometry.historical.length - 1];
-    const forecastPoint = geometry.forecast[0];
-    return `M ${pivot.x} ${pivot.y} L ${forecastPoint.x} ${forecastPoint.y}`;
-  })();
+  const historicalPath = buildPath(geometry.historical);
+  const delayedPath = buildPath(geometry.delayedPathPoints);
+  const forecastPath = buildPath(geometry.forecastPathPoints);
 
   const activeLeft = (geometry.activePoint.x / geometry.width) * 100;
   const tooltipClassName = [
     "chart-tooltip",
-    product.accent === "green" ? "is-green" : "is-red",
+    geometry.activePoint.phase === "delayed"
+      ? "is-delayed"
+      : product.accent === "green"
+        ? "is-green"
+        : "is-red",
     activeLeft > 84 ? "is-right-edge" : "",
     activeLeft < 16 ? "is-left-edge" : ""
   ]
@@ -163,7 +201,7 @@ export function DetailChart({ product }: { product: ProductSummary }) {
           })}
 
           <path
-            d={solidPath}
+            d={historicalPath}
             fill="none"
             stroke={product.accent === "green" ? "#567f3e" : "#ca2d26"}
             strokeWidth="3"
@@ -171,9 +209,20 @@ export function DetailChart({ product }: { product: ProductSummary }) {
             strokeLinejoin="round"
           />
 
-          {dashedPath ? (
+          {delayedPath ? (
             <path
-              d={dashedPath}
+              d={delayedPath}
+              fill="none"
+              stroke="#b58b31"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ) : null}
+
+          {forecastPath ? (
+            <path
+              d={forecastPath}
               fill="none"
               stroke={product.accent === "green" ? "#567f3e" : "#ca2d26"}
               strokeWidth="3"
@@ -185,8 +234,19 @@ export function DetailChart({ product }: { product: ProductSummary }) {
 
           {geometry.mapped.map((point) => {
             const isActive = point.date === active.date;
-            const isForecast = Boolean(point.forecast);
-            const stroke = product.accent === "green" ? "#567f3e" : "#ca2d26";
+            const isForecast = point.phase !== "historical";
+            const stroke =
+              point.phase === "delayed"
+                ? "#b58b31"
+                : product.accent === "green"
+                  ? "#567f3e"
+                  : "#ca2d26";
+            const activeFill =
+              point.phase === "delayed"
+                ? "rgba(181, 139, 49, 0.14)"
+                : product.accent === "green"
+                  ? "rgba(86, 127, 62, 0.12)"
+                  : "rgba(202, 45, 38, 0.12)";
 
             return (
               <g
@@ -199,7 +259,7 @@ export function DetailChart({ product }: { product: ProductSummary }) {
                     cx={point.x}
                     cy={point.y}
                     r="11"
-                    fill={product.accent === "green" ? "rgba(86, 127, 62, 0.12)" : "rgba(202, 45, 38, 0.12)"}
+                    fill={activeFill}
                   />
                 ) : null}
                 <circle
@@ -216,9 +276,12 @@ export function DetailChart({ product }: { product: ProductSummary }) {
 
           {geometry.forecast[0] ? (
             <rect
-              x={geometry.historical[geometry.historical.length - 1].x}
+              x={(geometry.delayed[geometry.delayed.length - 1] ?? geometry.historical[geometry.historical.length - 1]).x}
               y={geometry.forecast[0].y}
-              width={geometry.forecast[0].x - geometry.historical[geometry.historical.length - 1].x}
+              width={
+                geometry.forecast[0].x -
+                (geometry.delayed[geometry.delayed.length - 1] ?? geometry.historical[geometry.historical.length - 1]).x
+              }
               height={geometry.height - geometry.padding.bottom - geometry.forecast[0].y}
               fill={product.accent === "green" ? "rgba(86, 127, 62, 0.08)" : "rgba(202, 45, 38, 0.08)"}
             />
@@ -232,6 +295,10 @@ export function DetailChart({ product }: { product: ProductSummary }) {
           <span>Historical Trend</span>
         </div>
         <div className="chart-legend__item">
+          <span className="chart-line is-delayed" />
+          <span>Estimated During Data Delay</span>
+        </div>
+        <div className="chart-legend__item">
           <span
             className={`chart-line is-dashed ${product.accent === "green" ? "is-green" : "is-red"}`}
           />
@@ -239,11 +306,20 @@ export function DetailChart({ product }: { product: ProductSummary }) {
         </div>
       </div>
 
+      <div className="chart-note">
+        Gold points show AI-estimated months used while official grocery price releases are still delayed.
+      </div>
+
       <div className="chart-readout">
         <div className="chart-readout__label">Selected Point</div>
         <div className="chart-readout__value">
           {formatDate(active.date)} · C${active.price.toFixed(2)}
         </div>
+        {active.forecast && active.date <= currentMonthKey ? (
+          <div className="chart-readout__status">
+            Estimated due to delayed official data release
+          </div>
+        ) : null}
         {active.forecast && active.lowerBound !== undefined && active.upperBound !== undefined ? (
           <div className="chart-readout__range">
             Range: C${active.lowerBound.toFixed(2)} - C${active.upperBound.toFixed(2)}

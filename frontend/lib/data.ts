@@ -178,13 +178,26 @@ function getNextMonthKey() {
   return `${year}-${month}`;
 }
 
+function selectDisplayForecast(
+  forecastPoints: AppOutputPoint[],
+  nextMonthKey: string,
+) {
+  const sortedForecasts = [...forecastPoints].sort((left, right) =>
+    left.date.localeCompare(right.date),
+  );
+
+  return (
+    sortedForecasts.find((point) => point.date === nextMonthKey) ??
+    sortedForecasts.find((point) => point.date > nextMonthKey) ??
+    sortedForecasts.at(-1)
+  );
+}
+
 function toProductSummary(payload: AppOutputPayload): ProductSummary {
   const ui = PRODUCT_UI[payload.product];
   const nextMonthKey = getNextMonthKey();
   const forecastPoints = payload.series.filter((point) => point.forecast);
-  const selectedForecast =
-    forecastPoints.find((point) => point.date === nextMonthKey) ??
-    forecastPoints[0];
+  const selectedForecast = selectDisplayForecast(forecastPoints, nextMonthKey);
   const latestActual = [...payload.series]
     .filter((point) => !point.forecast)
     .sort((left, right) => left.date.localeCompare(right.date))

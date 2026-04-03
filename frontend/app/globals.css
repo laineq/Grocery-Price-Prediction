@@ -496,9 +496,14 @@ button {
   background: #ca2d26;
 }
 
+.chart-tooltip.is-delayed {
+  background: #b58b31;
+}
+
 .chart-legend {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 14px;
   padding: 8px 16px 0;
   color: #4f564f;
@@ -512,6 +517,8 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1 1 140px;
+  min-width: 0;
 }
 
 .chart-line {
@@ -546,6 +553,17 @@ button {
   color: var(--red);
 }
 
+.chart-line.is-delayed {
+  background: #b58b31;
+}
+
+.chart-note {
+  margin: 12px 6px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .chart-readout {
   margin: 18px 6px 0;
   padding: 16px 18px;
@@ -565,6 +583,13 @@ button {
   margin-top: 8px;
   font-size: 17px;
   font-weight: 700;
+}
+
+.chart-readout__status {
+  margin-top: 8px;
+  color: #8a6a1f;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .chart-readout__range {
@@ -674,7 +699,19 @@ button {
   }
 
   .chart-legend {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 12px 18px;
+    padding-inline: 8px;
+  }
+
+  .chart-legend__item {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .chart-legend__item:last-child {
+    grid-column: 1 / -1;
   }
 }
