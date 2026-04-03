@@ -199,10 +199,10 @@ def build_app_output(product, unit_label, actual_df, prediction_df):
         forecast_price = None
         change_pct = None
     else:
-        next_prediction = future_prediction_df.iloc[0]
+        selected_prediction = future_prediction_df.iloc[0]
         latest_actual_price = float(actual_df.iloc[-1]["price"])
-        forecast_price = round(float(next_prediction["price"]), 2)
-        prediction_month = format_prediction_month(next_prediction["date"])
+        forecast_price = round(float(selected_prediction["price"]), 2)
+        prediction_month = format_prediction_month(selected_prediction["date"])
         change_pct = round(((forecast_price - latest_actual_price) / latest_actual_price) * 100, 1)
 
     series = []

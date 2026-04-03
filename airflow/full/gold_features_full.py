@@ -12,21 +12,21 @@ BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 # Fixed lag configuration from feature engineering results
 AVOCADO_LAGS = {
-    "MEAN_C": 2,
-    "PRECIPITATION_MM": 4,
-    "MXN_CAD": 0,
+    "MEAN_C": 0,
+    "PRECIPITATION_MM": 5,
+    "import_qty": 0,
     "USD_CAD": 0,
-    "integrated_gas_price": 0,
-    "import_qty": 2,
+    "integrated_gas_price": 1,
+    "MXN_CAD": 7,
 }
 
 TOMATO_LAGS = {
-    "MEAN_C": 0,
-    "PRECIPITATION_MM": 6,
-    "MXN_CAD": 0,
-    "USD_CAD": 0,
-    "integrated_gas_price": 0,
-    "import_qty": 0,
+    "MEAN_C": 2,
+    "PRECIPITATION_MM": 3,
+    "import_qty": 3,
+    "USD_CAD": 1,
+    "integrated_gas_price": 1,
+    "MXN_CAD": 1,
 }
 
 START_DATE = "2017-01"

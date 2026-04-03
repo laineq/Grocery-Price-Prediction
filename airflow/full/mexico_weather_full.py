@@ -50,7 +50,7 @@ def save_bronze_full_task():
 
     # Define the time window we want to keep
     start_date = "2016-01-01"
-    end_date = "2026-01-01"
+    end_date = "2025-12-31"
 
     # Filter dataset to only include the target date range
     df_filtered = df[
@@ -58,7 +58,7 @@ def save_bronze_full_task():
         (df["PERIODO"] <= end_date)
     ]
 
-    print(f"Filtered rows (2016-01 → 2026-01): {len(df_filtered):,}")
+    print(f"Filtered rows (2016-01 → 2025-12): {len(df_filtered):,}")
 
     # Convert filtered DataFrame to JSON records
     records = df_filtered.to_dict(orient="records")
@@ -67,7 +67,7 @@ def save_bronze_full_task():
     s3 = boto3.client("s3")
 
     # Bronze storage location (raw snapshot of dataset)
-    s3_key = "bronze/mexico_weather/full_history/raw_2016_2026.json"
+    s3_key = "bronze/mexico_weather/full_history/raw_2016_2025.json"
 
     # Upload raw JSON to S3 Bronze layer
     s3.put_object(
@@ -91,7 +91,7 @@ def transform_to_silver():
     s3 = boto3.client("s3")
 
     # Location of Bronze dataset
-    bronze_key = "bronze/mexico_weather/full_history/raw_2016_2026.json"
+    bronze_key = "bronze/mexico_weather/full_history/raw_2016_2025.json"
     print(f"Reading Bronze: s3://{BUCKET_NAME}/{bronze_key}")
 
     # Load Bronze JSON from S3

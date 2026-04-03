@@ -79,7 +79,8 @@ def find_latest_csv_member(members):
 def save_bronze_task():
     """
     Download the latest annual ZIP snapshot for the current year and save it
-    to Bronze only when a new monthly ODPFN015 CSV appears.
+    to Bronze only when a new monthly ODPFN015 CSV appears. When a new monthly
+    CSV is saved, remove older current-year Bronze CSV snapshots.
     """
 
     print(f"Downloading ZIP file for {CURRENT_YEAR}: {ZIP_URL}")
@@ -126,6 +127,14 @@ def save_bronze_task():
         else:
             raise
 
+    resp = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=BRONZE_PREFIX)
+    old_csv_keys = [
+        obj["Key"] for obj in resp.get("Contents", [])
+        if obj["Key"].lower().endswith(".csv")
+        and os.path.basename(obj["Key"]).startswith(f"ODPFN015_{CURRENT_YEAR}")
+        and obj["Key"] != csv_s3_key
+    ]
+
     s3.put_object(
         Bucket=BUCKET_NAME,
         Key=zip_s3_key,
@@ -141,6 +150,10 @@ def save_bronze_task():
         ContentType="text/csv",
     )
     print(f"Uploaded CSV: s3://{BUCKET_NAME}/{csv_s3_key}")
+
+    for old_key in old_csv_keys:
+        s3.delete_object(Bucket=BUCKET_NAME, Key=old_key)
+        print(f"Deleted old Bronze CSV: s3://{BUCKET_NAME}/{old_key}")
 
 
 def transform_to_silver():

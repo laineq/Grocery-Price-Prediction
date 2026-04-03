@@ -14,6 +14,7 @@ from urllib3.util.retry import Retry
 
 # S3 bucket name (set via docker-compose environment variable)
 BUCKET_NAME = os.environ["BUCKET_NAME"]
+LATEST_N = int(os.environ.get("STATCAN_GROCERY_LATEST_N", "1"))
 
 
 # Mapping: vectorId → (Geography, Product name)
@@ -89,7 +90,7 @@ def fetch_latest_snapshot(vectors):
     """
 
     url = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
-    payload = [{"vectorId": v, "latestN": 1} for v in vectors]
+    payload = [{"vectorId": v, "latestN": LATEST_N} for v in vectors]
     session = build_retry_session()
 
     resp = session.post(url, json=payload, timeout=(60, 300))
@@ -115,72 +116,79 @@ def save_product_bronze_task(vectors, product_name):
     # Create S3 client
     s3 = boto3.client("s3")
 
-    # Extract latest reference period (e.g., "2026-01-01")
-    ref_per = data[0]["object"]["vectorDataPoint"][0]["refPer"]
-    year = ref_per[:4]
-    print(f"Latest reference period for {product_name}: {ref_per}")
+    all_ref_pers = sorted(
+        {
+            dp["refPer"]
+            for item in data
+            for dp in item.get("object", {}).get("vectorDataPoint", [])
+        }
+    )
+    if not all_ref_pers:
+        raise AirflowSkipException("No monthly datapoints returned from StatCan")
 
-    # Keep only the current-year snapshot
-    current_year_data = []
-    for item in data:
-        datapoints = item.get("object", {}).get("vectorDataPoint", [])
-        current_year_points = [
-            dp for dp in datapoints
-            if dp["refPer"].startswith(f"{year}-")
-        ]
-
-        if not current_year_points:
-            continue
-
-        item_copy = json.loads(json.dumps(item))
-        item_copy["object"]["vectorDataPoint"] = current_year_points
-        current_year_data.append(item_copy)
-
+    latest_ref_per = all_ref_pers[-1]
     print(
-        f"Prepared {len(current_year_data)} current-year vector snapshots "
-        f"for {product_name}"
+        f"Latest reference period for {product_name}: {latest_ref_per} "
+        f"(latestN={LATEST_N}, months returned={all_ref_pers})"
     )
 
-    # Bronze storage path (partitioned by year)
-    s3_key = (
-        f"bronze/canadian_grocery_prices/{product_name}/"
-        f"year={year}/raw.json"
-    )
+    month_payloads = {}
+    for ref_per in all_ref_pers:
+        year = ref_per[:4]
+        month = ref_per[5:7]
+        month_items = []
 
-    # Skip if the stored snapshot already contains the same latest month
-    try:
-        obj = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
-        existing_payload = json.loads(obj["Body"].read())
-        existing_latest = (
-            existing_payload[0]["object"]["vectorDataPoint"][0]["refPer"]
-            if existing_payload else None
+        for item in data:
+            datapoints = item.get("object", {}).get("vectorDataPoint", [])
+            month_points = [dp for dp in datapoints if dp["refPer"] == ref_per]
+            if not month_points:
+                continue
+
+            item_copy = json.loads(json.dumps(item))
+            item_copy["object"]["vectorDataPoint"] = month_points
+            month_items.append(item_copy)
+
+        if month_items:
+            month_payloads[(year, month)] = month_items
+
+    if not month_payloads:
+        raise AirflowSkipException("No monthly payloads prepared for Bronze")
+
+    new_partition_count = 0
+    for (year, month), month_items in month_payloads.items():
+        s3_key = (
+            f"bronze/canadian_grocery_prices/{product_name}/"
+            f"year={year}/month={month}/raw.json"
         )
 
-        if existing_latest == ref_per:
-            print(f"Bronze already up to date: {s3_key}")
-            raise AirflowSkipException("Current-year snapshot already up to date")
+        try:
+            obj = s3.get_object(Bucket=BUCKET_NAME, Key=s3_key)
+            existing_payload = json.loads(obj["Body"].read())
+            existing_ref_per = (
+                existing_payload[0]["object"]["vectorDataPoint"][0]["refPer"]
+                if existing_payload else None
+            )
 
-        print(
-            f"New month detected. Existing latest month: "
-            f"{existing_latest}, new latest month: {ref_per}"
+            if existing_ref_per == f"{year}-{month}-01":
+                print(f"Bronze already up to date: {s3_key}")
+                continue
+        except s3.exceptions.NoSuchKey:
+            pass
+        except s3.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] not in {"404", "NoSuchKey"}:
+                raise
+
+        s3.put_object(
+            Bucket=BUCKET_NAME,
+            Key=s3_key,
+            Body=json.dumps(month_items),
+            ContentType="application/json"
         )
-    except s3.exceptions.NoSuchKey:
-        print("No current-year Bronze snapshot found. Saving Bronze...")
-    except s3.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] in {"404", "NoSuchKey"}:
-            print("No current-year Bronze snapshot found. Saving Bronze...")
-        else:
-            raise
+        new_partition_count += 1
+        print(f"Uploaded Bronze: s3://{BUCKET_NAME}/{s3_key}")
 
-    # Upload raw JSON to S3 Bronze layer
-    s3.put_object(
-        Bucket=BUCKET_NAME,
-        Key=s3_key,
-        Body=json.dumps(current_year_data),
-        ContentType="application/json"
-    )
-
-    print(f"Uploaded Bronze: s3://{BUCKET_NAME}/{s3_key}")
+    if new_partition_count == 0:
+        raise AirflowSkipException("Bronze monthly partitions already up to date")
 
 
 def save_avocado_bronze_task():
@@ -201,8 +209,8 @@ def save_tomato_bronze_task():
 
 def transform_to_silver():
     """
-    Transform latest Bronze JSON into structured Parquet
-    and store in S3 Silver layer (partitioned by year).
+    Transform Bronze monthly JSON partitions into cumulative yearly Silver
+    Parquet files while preserving previously stored months.
     """
 
     s3 = boto3.client("s3")
@@ -214,60 +222,103 @@ def transform_to_silver():
 
     for product_name, bronze_prefix in bronze_keys.items():
         resp = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=bronze_prefix)
-        latest_key = sorted(
+        partition_keys = sorted(
             obj["Key"] for obj in resp["Contents"]
             if obj["Key"].endswith("raw.json")
-        )[-1]
+        )
 
-        print(f"Reading Bronze: s3://{BUCKET_NAME}/{latest_key}")
+        if not partition_keys:
+            raise AirflowSkipException(
+                f"No Bronze monthly partitions found for {product_name}"
+            )
 
-        obj = s3.get_object(Bucket=BUCKET_NAME, Key=latest_key)
-        data = json.loads(obj["Body"].read())
-        rows = []
+        yearly_frames = {}
 
-        for item in data:
-            vector_id = str(item["object"]["vectorId"])
-            datapoints = item["object"]["vectorDataPoint"]
+        for bronze_key in partition_keys:
+            print(f"Reading Bronze: s3://{BUCKET_NAME}/{bronze_key}")
 
-            geography, _ = VECTOR_META.get(vector_id, ("Unknown", "Unknown"))
-            if geography != "Canada":
+            obj = s3.get_object(Bucket=BUCKET_NAME, Key=bronze_key)
+            data = json.loads(obj["Body"].read())
+            rows = []
+
+            for item in data:
+                vector_id = str(item["object"]["vectorId"])
+                datapoints = item["object"]["vectorDataPoint"]
+
+                geography, _ = VECTOR_META.get(vector_id, ("Unknown", "Unknown"))
+                if geography != "Canada":
+                    continue
+
+                for dp in datapoints:
+                    date = dp["refPer"][:7]  # YYYY-MM
+                    year = date.split("-")[0]
+                    month = date.split("-")[1]
+                    price = dp["value"]
+
+                    rows.append({
+                        "year": year,
+                        "month": month,
+                        "date": date,
+                        "price": price
+                    })
+
+            if not rows:
+                print(f"No Canada rows found in Bronze partition: {bronze_key}")
                 continue
 
-            for dp in datapoints:
-                date = dp["refPer"][:7]  # YYYY-MM
-                year = date.split("-")[0]
-                price = dp["value"]
+            df = pd.DataFrame(rows).drop_duplicates(subset=["date"], keep="last")
+            print(f"{product_name} sample from {bronze_key}:")
+            print(df.head())
 
-                rows.append({
-                    "year": year,
-                    "date": date,
-                    "price": price
-                })
+            year = df["year"].iloc[0]
+            yearly_frames.setdefault(year, []).append(df[["date", "price"]].copy())
 
-        df = pd.DataFrame(rows)
-        print(f"{product_name} sample:")
-        print(df.head())
+        if not yearly_frames:
+            raise AirflowSkipException(
+                f"No Canada rows were produced for {product_name}"
+            )
 
-        # Convert to Parquet (columnar format for analytics)
-        buffer = BytesIO()
-        df.drop(columns=["year"]).to_parquet(buffer, index=False)
+        for year, frames in yearly_frames.items():
+            combined_df = pd.concat(frames, ignore_index=True)
 
-        # Silver storage path (partitioned by year)
-        year = df["year"].iloc[0]
-        silver_key = (
-            f"silver/canadian_grocery_prices/{product_name}/"
-            f"year={year}/data.parquet"
-        )
+            silver_key = (
+                f"silver/canadian_grocery_prices/{product_name}/"
+                f"year={year}/data.parquet"
+            )
 
-        # Upload Parquet to S3 Silver layer
-        s3.put_object(
-            Bucket=BUCKET_NAME,
-            Key=silver_key,
-            Body=buffer.getvalue(),
-            ContentType="application/octet-stream"
-        )
+            try:
+                existing_obj = s3.get_object(Bucket=BUCKET_NAME, Key=silver_key)
+                existing_df = pd.read_parquet(BytesIO(existing_obj["Body"].read()))
+                combined_df = pd.concat([existing_df, combined_df], ignore_index=True)
+                print(
+                    f"Merging with existing Silver year file: "
+                    f"s3://{BUCKET_NAME}/{silver_key}"
+                )
+            except s3.exceptions.NoSuchKey:
+                print(f"No Silver year file found yet for {product_name} {year}")
+            except s3.exceptions.ClientError as e:
+                if e.response["Error"]["Code"] not in {"404", "NoSuchKey"}:
+                    raise
+                print(f"No Silver year file found yet for {product_name} {year}")
 
-        print(f"Uploaded Silver: s3://{BUCKET_NAME}/{silver_key}")
+            combined_df = (
+                combined_df
+                .drop_duplicates(subset=["date"], keep="last")
+                .sort_values("date")
+                .reset_index(drop=True)
+            )
+
+            buffer = BytesIO()
+            combined_df.to_parquet(buffer, index=False)
+
+            s3.put_object(
+                Bucket=BUCKET_NAME,
+                Key=silver_key,
+                Body=buffer.getvalue(),
+                ContentType="application/octet-stream"
+            )
+
+            print(f"Uploaded Silver: s3://{BUCKET_NAME}/{silver_key}")
 
 
 # Default DAG configuration
