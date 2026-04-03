@@ -135,7 +135,9 @@ This will enable users to easily explore model outputs and gain insights into pr
          -  avocado_correlations_lag12.csv (full lag correlation results of avocado)
          -  tomato_correlations_lag12.csv (full lag correlation results of tomato)
   -  **feature_lag.py: Generates the final feature sets by applying selected lags and preparing both training and future datasets.**
-     -  input: Same datasets as calculate_lag.py
+     -  input: Same datasets as calculate_lag.py, and the following lag datasets:
+         -  tomato_lag_results_manual.csv 
+         -  avocado_lag_results_manual.csv
      -  output: 
          -  avocado_final_selective_log.csv (lagged avocado features with target variable; last row corresponds to the final observed price)
          -  tomato_final_selective_log.csv (lagged tomato features with target variable; last row corresponds to the final observed price)
