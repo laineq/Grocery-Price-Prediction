@@ -53,6 +53,11 @@ function buildPath(points: ChartPointWithCoords[]) {
     .join(" ");
 }
 
+function formatAxisMonth(date: string) {
+  const [year, month] = date.split("-").map(Number);
+  return `${MONTH_NAMES[month - 1]} '${`${year}`.slice(-2)}`;
+}
+
 export function DetailChart({ product }: { product: ProductSummary }) {
   const [range, setRange] = useState<RangeKey>("1Y");
   const currentMonthKey = getCurrentMonthKey();
@@ -78,7 +83,7 @@ export function DetailChart({ product }: { product: ProductSummary }) {
   const geometry = useMemo(() => {
     const width = 320;
     const height = 360;
-    const padding = { top: 26, right: 14, bottom: 34, left: 12 };
+    const padding = { top: 26, right: 14, bottom: 48, left: 36 };
     const innerWidth = width - padding.left - padding.right;
     const innerHeight = height - padding.top - padding.bottom;
     const bounds = getYBounds(points);
@@ -116,6 +121,7 @@ export function DetailChart({ product }: { product: ProductSummary }) {
       width,
       height,
       padding,
+      bounds,
       mapped,
       historical,
       delayed,
@@ -129,6 +135,26 @@ export function DetailChart({ product }: { product: ProductSummary }) {
   const historicalPath = buildPath(geometry.historical);
   const delayedPath = buildPath(geometry.delayedPathPoints);
   const forecastPath = buildPath(geometry.forecastPathPoints);
+  const xAxisY = geometry.height - geometry.padding.bottom;
+  const yAxisX = geometry.padding.left;
+  const yTicks = Array.from({ length: 4 }, (_, index) => {
+    const ratio = index / 3;
+    const value = geometry.bounds.max - (geometry.bounds.max - geometry.bounds.min) * ratio;
+    const y = geometry.padding.top + ((xAxisY - geometry.padding.top) / 3) * index;
+    return {
+      key: `${index}-${value}`,
+      value,
+      y,
+    };
+  });
+  const xTickCount = Math.min(4, geometry.mapped.length);
+  const xTicks = Array.from({ length: xTickCount }, (_, index) => {
+    if (xTickCount === 1) {
+      return geometry.mapped[0];
+    }
+    const pointIndex = Math.round((index * (geometry.mapped.length - 1)) / (xTickCount - 1));
+    return geometry.mapped[pointIndex];
+  }).filter((point, index, array) => array.findIndex((item) => item.date === point.date) === index);
 
   const activeLeft = (geometry.activePoint.x / geometry.width) * 100;
   const tooltipClassName = [
@@ -185,6 +211,23 @@ export function DetailChart({ product }: { product: ProductSummary }) {
           role="img"
           aria-label={`${product.name} price movement chart`}
         >
+          <line
+            x1={yAxisX}
+            x2={yAxisX}
+            y1={geometry.padding.top}
+            y2={xAxisY}
+            stroke="rgba(31, 37, 34, 0.18)"
+            strokeWidth="1.25"
+          />
+          <line
+            x1={yAxisX}
+            x2={geometry.width - geometry.padding.right}
+            y1={xAxisY}
+            y2={xAxisY}
+            stroke="rgba(31, 37, 34, 0.18)"
+            strokeWidth="1.25"
+          />
+
           {[0, 1, 2, 3, 4].map((line) => {
             const y = geometry.padding.top + ((geometry.height - geometry.padding.top - geometry.padding.bottom) / 4) * line;
             return (
@@ -199,6 +242,48 @@ export function DetailChart({ product }: { product: ProductSummary }) {
               />
             );
           })}
+
+          {yTicks.map((tick) => (
+            <g key={tick.key}>
+              <line
+                x1={yAxisX - 5}
+                x2={yAxisX}
+                y1={tick.y}
+                y2={tick.y}
+                stroke="rgba(31, 37, 34, 0.22)"
+                strokeWidth="1"
+              />
+              <text
+                x={yAxisX - 8}
+                y={tick.y + 4}
+                className="chart-axis-label"
+                textAnchor="end"
+              >
+                {tick.value.toFixed(2)}
+              </text>
+            </g>
+          ))}
+
+          {xTicks.map((tick) => (
+            <g key={tick.date}>
+              <line
+                x1={tick.x}
+                x2={tick.x}
+                y1={xAxisY}
+                y2={xAxisY + 5}
+                stroke="rgba(31, 37, 34, 0.22)"
+                strokeWidth="1"
+              />
+              <text
+                x={tick.x}
+                y={xAxisY + 18}
+                className="chart-axis-label"
+                textAnchor="middle"
+              >
+                {formatAxisMonth(tick.date)}
+              </text>
+            </g>
+          ))}
 
           <path
             d={historicalPath}
