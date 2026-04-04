@@ -196,17 +196,21 @@ function selectDisplayForecast(
 function toProductSummary(payload: AppOutputPayload): ProductSummary {
   const ui = PRODUCT_UI[payload.product];
   const nextMonthKey = getNextMonthKey();
+  const sortedSeries = [...payload.series].sort((left, right) =>
+    left.date.localeCompare(right.date),
+  );
   const forecastPoints = payload.series.filter((point) => point.forecast);
   const selectedForecast = selectDisplayForecast(forecastPoints, nextMonthKey);
-  const latestActual = [...payload.series]
-    .filter((point) => !point.forecast)
-    .sort((left, right) => left.date.localeCompare(right.date))
-    .at(-1);
+  const previousPoint = selectedForecast
+    ? sortedSeries
+        .filter((point) => point.date < selectedForecast.date)
+        .at(-1)
+    : undefined;
   const changePct =
-    selectedForecast && latestActual && latestActual.price !== 0
+    selectedForecast && previousPoint && previousPoint.price !== 0
       ? Number(
-          (((Number(selectedForecast.price) - Number(latestActual.price)) /
-            Number(latestActual.price)) *
+          (((Number(selectedForecast.price) - Number(previousPoint.price)) /
+            Number(previousPoint.price)) *
             100).toFixed(1),
         )
       : 0;

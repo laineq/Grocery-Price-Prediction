@@ -16,8 +16,8 @@ eggs/
 .eggs/
 lib/
 lib64/
-!frontend/lib/
-!frontend/lib/*.ts
+!application/lib/
+!application/lib/*.ts
 parts/
 sdist/
 var/
@@ -164,7 +164,7 @@ cython_debug/
 # Frontend / Next.js
 node_modules/
 .next/
-frontend/node_modules/
-frontend/.next/
-frontend/.env.local
+application/node_modules/
+application/.next/
+application/.env.local
 *.tsbuildinfo

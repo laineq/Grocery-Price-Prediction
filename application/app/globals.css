@@ -51,7 +51,7 @@ button {
 .phone-shell {
   width: min(100%, 420px);
   margin: 0 auto;
-  padding: 24px 18px 20px;
+  padding: 24px 18px calc(28px + env(safe-area-inset-bottom, 0px));
   border-radius: 40px;
   background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--shadow);
@@ -223,15 +223,18 @@ button {
 
 .bottom-nav {
   position: sticky;
-  bottom: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-top: 34px;
   padding: 14px;
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 14px 34px rgba(44, 60, 38, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .bottom-nav__item {
@@ -610,6 +613,7 @@ button {
   display: grid;
   gap: 22px;
   margin-top: 24px;
+  margin-bottom: 12px;
 }
 
 .driver-item {
@@ -651,6 +655,7 @@ button {
   .phone-shell {
     border-radius: 28px;
     padding-inline: 14px;
+    padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px));
   }
 
   .market-card__body,

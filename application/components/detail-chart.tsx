@@ -199,7 +199,8 @@ export function DetailChart({ product }: { product: ProductSummary }) {
           className={tooltipClassName}
           style={{
             left: `${activeLeft}%`,
-            top: `${(geometry.activePoint.y / geometry.height) * 100}%`
+            top: `${(geometry.activePoint.y / geometry.height) * 100}%`,
+            pointerEvents: "none",
           }}
         >
           C${geometry.activePoint.price.toFixed(2)} ({formatDate(geometry.activePoint.date).toUpperCase()})
@@ -369,6 +370,7 @@ export function DetailChart({ product }: { product: ProductSummary }) {
               }
               height={geometry.height - geometry.padding.bottom - geometry.forecast[0].y}
               fill={product.accent === "green" ? "rgba(86, 127, 62, 0.08)" : "rgba(202, 45, 38, 0.08)"}
+              pointerEvents="none"
             />
           ) : null}
         </svg>

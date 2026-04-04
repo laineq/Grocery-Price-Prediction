@@ -3,6 +3,8 @@ import { BrandMark } from "@/components/branding";
 import { DashboardCard } from "@/components/dashboard-card";
 import { getDashboardProducts } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const dashboardCards = await getDashboardProducts();
 
