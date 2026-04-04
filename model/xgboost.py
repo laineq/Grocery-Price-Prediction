@@ -57,14 +57,6 @@ PRODUCT_CONFIGS = {
             "PRECIPITATION_MM",
         ],
         "selective_input_file": FEATURE_ENGINEERING_DIR / "avocado_final_selective_log.csv",
-        "selective_external_features": [
-            "import_qty_lag_2",
-            "MEAN_C_lag_2",
-            "PRECIPITATION_MM_lag_4",
-            "MXN_CAD_lag_0",
-            "USD_CAD_lag_0",
-            "integrated_gas_price_lag_0",
-        ],
         "model_4_feature_columns": [
             "lag1",
             "lag2",
@@ -88,14 +80,6 @@ PRODUCT_CONFIGS = {
             "PRECIPITATION_MM",
         ],
         "selective_input_file": FEATURE_ENGINEERING_DIR / "tomato_final_selective_log.csv",
-        "selective_external_features": [
-            "import_qty_lag_0",
-            "MEAN_C_lag_0",
-            "PRECIPITATION_MM_lag_6",
-            "MXN_CAD_lag_0",
-            "USD_CAD_lag_0",
-            "integrated_gas_price_lag_0",
-        ],
         "model_4_feature_columns": [
             "lag1",
             "lag2",
@@ -192,14 +176,31 @@ def _add_target_lags(df: pd.DataFrame, target_column: str) -> pd.DataFrame:
     return out
 
 
-def _resolve_feature_columns(df: pd.DataFrame, preferred_columns: list[str], context: str) -> list[str]:
+def _resolve_feature_columns(
+    df: pd.DataFrame,
+    preferred_columns: list[str],
+    context: str,
+    *,
+    raise_if_empty: bool = True,
+) -> list[str]:
     available = [col for col in preferred_columns if col in df.columns]
     missing = [col for col in preferred_columns if col not in df.columns]
     if missing:
         print(f"[xgboost] {context}: skipping unavailable columns: {missing}")
-    if not available:
+    if not available and raise_if_empty:
         raise ValueError(f"{context}: no feature columns available from preferred list.")
     return available
+
+
+def _derive_selective_external_features(df: pd.DataFrame) -> list[str]:
+    excluded_columns = {
+        DATE_COLUMN,
+        "Date",
+        SELECTIVE_PRICE_COLUMN,
+        SELECTIVE_TARGET_COLUMN,
+        *TARGET_LAG_FEATURE_COLUMNS,
+    }
+    return [col for col in df.columns if col not in excluded_columns]
 
 
 def _build_model_specs(product_name: str, config: dict, source_a_df: pd.DataFrame, source_b_df: pd.DataFrame) -> list[dict]:
@@ -208,16 +209,21 @@ def _build_model_specs(product_name: str, config: dict, source_a_df: pd.DataFram
         config["source_a_external_features"],
         context=f"{product_name} model_2 source_a external features",
     )
-    source_b_external_features = _resolve_feature_columns(
-        source_b_df,
-        config["selective_external_features"],
-        context=f"{product_name} model_3 source_b external features",
-    )
+    source_b_external_features = _derive_selective_external_features(source_b_df)
+    if not source_b_external_features:
+        raise ValueError(f"{product_name} model_3 source_b external features: none detected from selective input.")
+
     model_4_features = _resolve_feature_columns(
         source_b_df,
         config["model_4_feature_columns"],
         context=f"{product_name} model_4 source_b reduced features",
+        raise_if_empty=False,
     )
+    if len(model_4_features) < len(config["model_4_feature_columns"]):
+        print(f"[xgboost] {product_name} model_4: proceeding with available configured columns only: {model_4_features}")
+    if not model_4_features:
+        model_4_features = TARGET_LAG_FEATURE_COLUMNS.copy()
+        print(f"[xgboost] {product_name} model_4: configured reduced features unavailable; fallback to target lag features: {model_4_features}")
 
     return [
         {
