@@ -1,2 +1,2 @@
 product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape,directional_accuracy
-avocado,xg-boost model_3,full feature engineering,target lag + external lagged,model_3_full_selective_with_target_lags,0.12160560011863707,0.13738308328325108,7.590495420846581,0.45714285714285713
+avocado,xg-boost model_3,full feature engineering,all selective csv features + lagged target,model_3_full_selective_with_target_lags,0.11704731808768377,0.14035162791727165,7.397128071857815,0.37142857142857144

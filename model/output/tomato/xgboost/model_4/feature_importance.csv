@@ -1,6 +1,4 @@
 feature,importance
-lag12,0.5579619
-MEAN_C_lag_0,0.1387305
-lag1,0.10909827
-integrated_gas_price_lag_0,0.10609239
-lag2,0.08811695
+MEAN_C_lag_2,0.47919586
+PRECIPITATION_MM_lag_3,0.3184848
+import_qty_lag_3,0.20231928

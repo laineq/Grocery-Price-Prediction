@@ -1,2 +1,2 @@
 product,xgboost_model,label_model,feature_lag,model_name,mae,rmse,mape,directional_accuracy
-tomato,xg-boost model_4,core feature selection,selected lagged target and external (based on importance plot),model_4_reduced_selective_features,0.19171516683366563,0.2306351703633725,4.182028168252824,0.6857142857142857
+tomato,xg-boost model_4,core feature selection,selected external features only,model_4_reduced_selective_features,0.23138061682383218,0.285168625414782,4.967280222404422,0.6170212765957447

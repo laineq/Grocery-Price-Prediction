@@ -104,13 +104,17 @@ def run_sarima_cv(
                         enforce_invertibility=False,
                     )
                     fitted = model.fit(disp=False)
-                    fold_forecast = fitted.forecast(steps=len(test_idx))
-                    forecast_values = np.asarray(fold_forecast, dtype=float)
+                    forecast_result = fitted.get_forecast(steps=len(test_idx))
+                    forecast_values = np.asarray(forecast_result.predicted_mean, dtype=float)
             except Exception:
                 forecast_values = np.full(len(test_idx), np.nan, dtype=float)
 
         for step, (idx, forecast_value) in enumerate(zip(test_idx, forecast_values), start=1):
-            prediction = np.exp(forecast_value) if use_log and not np.isnan(forecast_value) else forecast_value
+            if use_log:
+                prediction = np.exp(forecast_value) if not np.isnan(forecast_value) else np.nan
+            else:
+                prediction = forecast_value
+
             rows.append(
                 {
                     "fold": fold_id,
@@ -119,6 +123,8 @@ def run_sarima_cv(
                     "actual": y_actual.iloc[idx],
                     "model": model_name,
                     "prediction": prediction,
+                    "lower_bound": np.nan,
+                    "upper_bound": np.nan,
                 }
             )
 

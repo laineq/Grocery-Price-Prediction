@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-#py model/xgboost.py
+# py model/xgboost.py
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
 if str(CURRENT_DIR) not in sys.path:
@@ -39,6 +39,7 @@ INITIAL_WINDOW = 60
 HORIZON = 1
 
 OUTPUT_ROOT = CURRENT_DIR / "output"
+PREDICTION_RESULT_DIR = PROJECT_ROOT / "prediction-result"
 ADJUSTED_DATA_DIR = PROJECT_ROOT / "AdjustedData"
 FEATURE_ENGINEERING_DIR = PROJECT_ROOT / "Feature-Engineering"
 
@@ -58,11 +59,8 @@ PRODUCT_CONFIGS = {
         ],
         "selective_input_file": FEATURE_ENGINEERING_DIR / "avocado_final_selective_log.csv",
         "model_4_feature_columns": [
-            "lag1",
-            "lag2",
-            "lag12",
-            "MEAN_C_lag_2",
-            "integrated_gas_price_lag_0",
+            "MEAN_C_lag_0",
+            "PRECIPITATION_MM_lag_5",
         ],
     },
     "tomato": {
@@ -81,11 +79,9 @@ PRODUCT_CONFIGS = {
         ],
         "selective_input_file": FEATURE_ENGINEERING_DIR / "tomato_final_selective_log.csv",
         "model_4_feature_columns": [
-            "lag1",
-            "lag2",
-            "lag12",
-            "MEAN_C_lag_0",
-            "integrated_gas_price_lag_0",
+            "MEAN_C_lag_2",
+            "PRECIPITATION_MM_lag_3",
+            "import_qty_lag_3",
         ],
     },
 }
@@ -144,7 +140,14 @@ def _load_source_a_merged_dataset(product_name: str, config: dict) -> pd.DataFra
     weather_df = pd.read_csv(ADJUSTED_DATA_DIR / "mexico_weather_adjusted.csv")
     weather_df = weather_df.rename(columns={"date": DATE_COLUMN})
     weather_df[DATE_COLUMN] = pd.to_datetime(weather_df[DATE_COLUMN], errors="coerce")
-    weather_df["STATE_normalized"] = weather_df["STATE"].astype(str).str.normalize("NFKD").str.encode("ascii", "ignore").str.decode("ascii").str.lower()
+    weather_df["STATE_normalized"] = (
+        weather_df["STATE"]
+        .astype(str)
+        .str.normalize("NFKD")
+        .str.encode("ascii", "ignore")
+        .str.decode("ascii")
+        .str.lower()
+    )
     weather_df = weather_df[weather_df["STATE_normalized"] == "michoacan"][[DATE_COLUMN, "MEAN_C", "PRECIPITATION_MM"]]
 
     out_df = (
@@ -186,19 +189,18 @@ def _resolve_feature_columns(
     available = [col for col in preferred_columns if col in df.columns]
     missing = [col for col in preferred_columns if col not in df.columns]
     if missing:
-        print(f"[xgboost] {context}: skipping unavailable columns: {missing}")
+        print(f"[xgboost] {context}: missing required columns: {missing}")
     if not available and raise_if_empty:
         raise ValueError(f"{context}: no feature columns available from preferred list.")
     return available
 
 
-def _derive_selective_external_features(df: pd.DataFrame) -> list[str]:
+def _derive_selective_feature_pool(df: pd.DataFrame) -> list[str]:
     excluded_columns = {
         DATE_COLUMN,
         "Date",
         SELECTIVE_PRICE_COLUMN,
         SELECTIVE_TARGET_COLUMN,
-        *TARGET_LAG_FEATURE_COLUMNS,
     }
     return [col for col in df.columns if col not in excluded_columns]
 
@@ -209,21 +211,26 @@ def _build_model_specs(product_name: str, config: dict, source_a_df: pd.DataFram
         config["source_a_external_features"],
         context=f"{product_name} model_2 source_a external features",
     )
-    source_b_external_features = _derive_selective_external_features(source_b_df)
-    if not source_b_external_features:
-        raise ValueError(f"{product_name} model_3 source_b external features: none detected from selective input.")
+
+    source_b_feature_pool = _derive_selective_feature_pool(source_b_df)
+    if not source_b_feature_pool:
+        raise ValueError(f"{product_name} model_3 source_b features: none detected from selective input.")
+
+    model_3_features = TARGET_LAG_FEATURE_COLUMNS + [
+        col for col in source_b_feature_pool if col not in TARGET_LAG_FEATURE_COLUMNS
+    ]
 
     model_4_features = _resolve_feature_columns(
         source_b_df,
         config["model_4_feature_columns"],
-        context=f"{product_name} model_4 source_b reduced features",
-        raise_if_empty=False,
+        context=f"{product_name} model_4 source_b selected features",
+        raise_if_empty=True,
     )
-    if len(model_4_features) < len(config["model_4_feature_columns"]):
-        print(f"[xgboost] {product_name} model_4: proceeding with available configured columns only: {model_4_features}")
-    if not model_4_features:
-        model_4_features = TARGET_LAG_FEATURE_COLUMNS.copy()
-        print(f"[xgboost] {product_name} model_4: configured reduced features unavailable; fallback to target lag features: {model_4_features}")
+    missing_model_4 = [col for col in config["model_4_feature_columns"] if col not in model_4_features]
+    if missing_model_4:
+        raise ValueError(
+            f"{product_name} model_4: missing required selected features: {missing_model_4}"
+        )
 
     return [
         {
@@ -250,17 +257,17 @@ def _build_model_specs(product_name: str, config: dict, source_a_df: pd.DataFram
             "model_variant": "model_3",
             "model_name": "model_3_full_selective_with_target_lags",
             "model_label": "full feature engineering",
-            "feature_lag_label": "target lag + external lagged",
+            "feature_lag_label": "all selective csv features + lagged target",
             "df": source_b_df,
             "target_column": SELECTIVE_TARGET_COLUMN,
             "price_column": SELECTIVE_PRICE_COLUMN,
-            "feature_columns": TARGET_LAG_FEATURE_COLUMNS + source_b_external_features,
+            "feature_columns": model_3_features,
         },
         {
             "model_variant": "model_4",
             "model_name": "model_4_reduced_selective_features",
             "model_label": "core feature selection",
-            "feature_lag_label": "selected lagged target and external (based on importance plot)",
+            "feature_lag_label": "selected external features only",
             "df": source_b_df,
             "target_column": SELECTIVE_TARGET_COLUMN,
             "price_column": SELECTIVE_PRICE_COLUMN,
@@ -415,6 +422,34 @@ def _save_outputs(
     _save_actual_vs_predicted_plot(predictions_df, output_dir, product_name, model_name)
 
 
+def _export_dashboard_model_1_predictions(
+    product_name: str,
+    predictions_df: pd.DataFrame,
+) -> None:
+    product_output_dir = PREDICTION_RESULT_DIR / product_name
+    product_output_dir.mkdir(parents=True, exist_ok=True)
+
+    export_df = predictions_df.copy()
+    export_df[DATE_COLUMN] = pd.to_datetime(export_df[DATE_COLUMN], errors="coerce")
+    export_df["actual"] = pd.to_numeric(export_df["actual"], errors="coerce")
+    export_df["predicted"] = pd.to_numeric(export_df["predicted"], errors="coerce")
+    export_df = export_df.dropna(subset=[DATE_COLUMN, "predicted"]).sort_values(DATE_COLUMN).reset_index(drop=True)
+
+    residuals = (export_df["actual"] - export_df["predicted"]).dropna()
+    sigma = residuals.std(ddof=1) if len(residuals) > 1 else float("nan")
+    margin = 1.96 * sigma
+
+    dashboard_out = pd.DataFrame(
+        {
+            "date": export_df[DATE_COLUMN].dt.strftime("%Y-%m"),
+            "prediction": export_df["predicted"],
+            "lower_bound": export_df["predicted"] - margin,
+            "upper_bound": export_df["predicted"] + margin,
+        }
+    )
+    dashboard_out.to_csv(product_output_dir / f"xgboost_model_1_{product_name}.csv", index=False)
+
+
 def run_product_models(product_name: str, config: dict) -> None:
     source_a_df = _load_source_a_merged_dataset(product_name, config)
     source_a_df = _add_target_lags(source_a_df, config["source_a_target_column"])
@@ -458,6 +493,11 @@ def run_product_models(product_name: str, config: dict) -> None:
             metrics_df=metrics_df,
             feature_importance_df=feature_importance_df,
         )
+        if spec["model_variant"] == "model_1":
+            _export_dashboard_model_1_predictions(
+                product_name=product_name,
+                predictions_df=predictions_df,
+            )
         metrics_row = metrics_df.copy()
         metrics_row.insert(0, "model_variant", spec["model_variant"])
         metrics_row.insert(1, "xgboost_model", f"xg-boost {spec['model_variant']}")

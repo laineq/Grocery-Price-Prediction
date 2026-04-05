@@ -27,14 +27,12 @@ HORIZON = 1
 def _export_dashboard_predictions(all_predictions_df: pd.DataFrame) -> None:
     PREDICTION_RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
-    model_exports = {
-        "naive_baseline_predictions.csv": "baseline_naive",
-        "sarima_no_external_indicator_predictions.csv": "sarima_raw",
-    }
-
     export_df = all_predictions_df.copy()
     export_df["date"] = pd.to_datetime(export_df["date"], errors="coerce")
+    export_df["actual"] = pd.to_numeric(export_df.get("actual"), errors="coerce")
     export_df["prediction"] = pd.to_numeric(export_df["prediction"], errors="coerce")
+    export_df["lower_bound"] = pd.to_numeric(export_df.get("lower_bound"), errors="coerce")
+    export_df["upper_bound"] = pd.to_numeric(export_df.get("upper_bound"), errors="coerce")
     products = sorted(export_df["product"].dropna().unique())
 
     for product_name in products:
@@ -42,14 +40,44 @@ def _export_dashboard_predictions(all_predictions_df: pd.DataFrame) -> None:
         product_output_dir.mkdir(parents=True, exist_ok=True)
 
         product_df = export_df[export_df["product"] == product_name]
-        for output_file, model_name in model_exports.items():
-            model_df = (
-                product_df[product_df["model"] == model_name][["date", "prediction"]]
-                .dropna(subset=["date", "prediction"])
-                .sort_values("date")
-            )
-            model_df["date"] = model_df["date"].dt.strftime("%Y-%m")
-            model_df.to_csv(product_output_dir / output_file, index=False)
+
+        naive_df = (
+            product_df[product_df["model"] == "baseline_naive"][["date", "actual", "prediction"]]
+            .dropna(subset=["date", "prediction"])
+            .sort_values("date")
+            .copy()
+        )
+        residuals = (naive_df["actual"] - naive_df["prediction"]).dropna()
+        sigma = residuals.std(ddof=1) if len(residuals) > 1 else float("nan")
+        margin = 1.96 * sigma
+        naive_out = pd.DataFrame(
+            {
+                "date": naive_df["date"].dt.strftime("%Y-%m"),
+                "prediction": naive_df["prediction"],
+                "lower_bound": naive_df["prediction"] - margin,
+                "upper_bound": naive_df["prediction"] + margin,
+            }
+        )
+        naive_out.to_csv(product_output_dir / f"naive_{product_name}.csv", index=False)
+
+        sarima_df = (
+            product_df[product_df["model"] == "sarima_log"][["date", "actual", "prediction"]]
+            .dropna(subset=["date", "prediction"])
+            .sort_values("date")
+            .copy()
+        )
+        sarima_residuals = (sarima_df["actual"] - sarima_df["prediction"]).dropna()
+        sarima_sigma = sarima_residuals.std(ddof=1) if len(sarima_residuals) > 1 else float("nan")
+        sarima_margin = 1.96 * sarima_sigma
+        sarima_out = pd.DataFrame(
+            {
+                "date": sarima_df["date"].dt.strftime("%Y-%m"),
+                "prediction": sarima_df["prediction"],
+                "lower_bound": sarima_df["prediction"] - sarima_margin,
+                "upper_bound": sarima_df["prediction"] + sarima_margin,
+            }
+        )
+        sarima_out.to_csv(product_output_dir / f"sarima_{product_name}.csv", index=False)
 
 
 def run_product(product_name: str, file_name: str) -> pd.DataFrame:
