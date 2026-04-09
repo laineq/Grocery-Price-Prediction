@@ -1,8 +1,10 @@
 SFU BigData Lab2 Project
-** requirement**
+
+## requirement  
+
 In your repository, please include a file README.txt (or README.md if you prefer) indicating how we can actually test your project as well as other notes about things we should look for. If you created some kind of web frontend, please include a URL in the README.md as well.
 
-**Internal Document:**  
+**Internal Document:**   
 https://docs.google.com/document/d/1qe57lMZQkCWW0wimnmd1cKWC8teOTCj8oKzUkfZY7gU/edit?tab=t.0
 
 ---
