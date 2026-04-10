@@ -15,6 +15,15 @@ This project forecasts monthly Canadian grocery prices for **avocado and tomato*
 
 The system is designed as an **end-to-end automated pipeline**, where data is updated monthly and predictions are generated automatically.
 
+## Final Outputs
+
+- **Web application (GroceryCast):** [http://35.91.193.142:3000](http://35.91.193.142:3000)
+- **Interactive dashboard:** [https://jli624.shinyapps.io/grocerypriceprediction/](https://jli624.shinyapps.io/grocerypriceprediction/)
+
+Our final data product, **GroceryCast**, is a web-based forecasting tool designed to make grocery price predictions accessible to a broad audience. The web application is tailored for non-technical users and allows them to view predicted grocery prices for upcoming periods, understand whether prices are expected to increase or decrease, and explore historical trends through simple visualizations. The interface is intentionally lightweight and user-friendly so that users can quickly interpret predictions without technical background.
+
+For users who want deeper analytical insight, we also provide a separate interactive dashboard. The dashboard focuses on model behavior and evaluation, including comparisons between predicted and actual prices across multiple models, visualization of important drivers and historical trends, and lag-analysis views that help explain how past values influence current predictions. Together, the application and dashboard make the project both accessible and transparent by combining easy-to-read forecasts with more detailed model exploration.
+
 ---
 
 ## Project Goal
@@ -55,6 +64,8 @@ This project leverages **Apache Airflow** to automate the end-to-end workflow:
 
 This enables continuous updates and **automated monthly forecasting**.
 
+At a high level, the monthly workflow begins by checking public data sources for new grocery price, CPI, import, exchange-rate, oil-price, and weather data. These datasets are ingested into the pipeline, standardized into monthly analytical tables, merged into product-specific feature sets, and then passed to the forecasting stage. The final DAG converts model outputs into JSON files that are consumed directly by the GroceryCast web application.
+
 ### Airflow DAG Flow
 
 ```mermaid
@@ -71,6 +82,8 @@ flowchart TD
     J --> K["app_output_monthly"]
 ```
 
+The DAG structure is modular rather than monolithic. Source-specific ingestion DAGs independently collect and clean monthly data for grocery prices, CPI, imports, exchange rates, oil prices, and weather. These upstream outputs feed into `grocery_price_adjusted_monthly` and `gold_features_monthly`, where inflation-adjusted price targets and model-ready feature tables are created. Next, `future_features_monthly` extends the exogenous variables to the next forecast month, `prediction_monthly` runs the SARIMAX forecasting step, and `app_output_monthly` prepares the final application payloads.
+
 ### Data Layers
 
 ```mermaid
@@ -81,7 +94,7 @@ flowchart LR
     D --> E["App Output<br/>JSON for GroceryCast"]
 ```
 
-The pipeline follows a **Bronze-Silver-Gold** architecture. Raw source data is first ingested into Bronze, transformed into standardized monthly Silver tables, merged into Gold feature tables, and then passed into the forecasting and app-output stages.
+The pipeline follows a **Bronze-Silver-Gold** architecture. In the Bronze layer, raw snapshots from external data sources are stored without modification so the original inputs are preserved. In the Silver layer, those raw files are cleaned, filtered, and standardized into monthly datasets that can be merged consistently across sources. In the Gold layer, the Silver datasets are combined into product-specific feature tables that include the variables needed for forecasting. These Gold outputs are then used by the prediction stage to generate next-month forecasts and confidence intervals, which are finally transformed into JSON files for the GroceryCast frontend.
 
 ---
 
