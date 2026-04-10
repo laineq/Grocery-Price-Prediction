@@ -140,7 +140,14 @@ Results Location:
 
 SARIMAX is the final selected model.
 
-Its outputs are stored separately in:
+```bash
+python model/sarimax_predict_future.py
+python model/sarimax_evaluation.py
+```
+Output:
+- Generates SARIMA results
+
+Results Location:
 - `sarimax-model-output/`
   - Final predictions
   - Evaluation results
