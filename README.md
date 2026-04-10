@@ -155,18 +155,6 @@ We use **expanding window cross-validation with one-step-ahead forecasting**, wh
 
 ---
 
-## Application & Dashboard (Planned)
-
-We plan to build:
-
-- a lightweight **application** for accessing model predictions  
-- an interactive **dashboard** to visualize:
-  - price trends  
-  - forecasts  
-  - feature importance / impacts  
-
-This will enable users to easily explore model outputs and gain insights into price dynamics.
-
 ## Team Members
 - Joohyun Park
 - Jiayi Li
