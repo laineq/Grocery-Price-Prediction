@@ -109,6 +109,23 @@ We use **expanding-window cross-validation with one-step-ahead forecasting** to 
 ### 1. Baseline (Naive) and SARIMA
 
 ```bash
+python Feature-Engineering/calculate_lag.py
+python Feature-Engineering/feature_lag.py
+```
+
+Output:
+- calculate_lag.py: Computes correlations between variables
+- feature_lag.py: Generates the final feature sets
+
+Results Location:
+- `Feature-Engineering/`
+  - correlations between variables
+  - final feature sets
+
+
+### 2. Baseline (Naive) and SARIMA
+
+```bash
 python model/run_baseline_sarima.py
 ```
 
@@ -121,7 +138,7 @@ Results Location:
   - Accuracy metrics
 
 
-### 2. XGBoost
+### 3. XGBoost
 
 ```bash
 python model/xgboost.py
@@ -136,7 +153,7 @@ Results Location:
   - Accuracy metrics
 
 
-### 3. SARIMAX (Final Model)
+### 4. SARIMAX (Final Model)
 
 SARIMAX is the final selected model.
 
