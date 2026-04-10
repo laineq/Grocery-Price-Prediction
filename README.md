@@ -9,7 +9,7 @@ https://docs.google.com/document/d/1qe57lMZQkCWW0wimnmd1cKWC8teOTCj8oKzUkfZY7gU/
 
 ---
 
-# Grocery Price Prediction (Canada) (Ongoing)
+# Grocery Price Prediction
 
 This project forecasts monthly Canadian grocery prices for **avocado and tomato**. It combines historical retail prices with external indicators such as **import volumes, gas prices, weather (temperature and precipitation), exchange rates, and CPI** to improve prediction accuracy.
 
@@ -17,13 +17,13 @@ The system is designed as an **end-to-end automated pipeline**, where data is up
 
 ## Tech Stack
 
-- **Python** for data processing, feature engineering, and forecasting
-- **Apache Airflow** for the automated monthly pipeline
-- **AWS EC2** for hosting
-- **AWS S3** for Bronze, Silver, Gold, prediction, and app-output storage
-- **Next.js + React + TypeScript** for the GroceryCast web app
-- **Docker** for application packaging and deployment
-- **Shiny** for the interactive dashboard
+- **Python** : data processing, feature engineering, and forecasting
+- **Apache Airflow** : automated monthly pipeline
+- **AWS EC2** : hosting Airflow and the web application
+- **AWS S3** : Bronze, Silver, Gold, prediction, and app-output storage
+- **Next.js + React + TypeScript** : GroceryCast web app
+- **Docker** : application packaging and deployment
+- **Shiny** : interactive dashboard
 
 The stack above matches the current project files: Airflow DAGs are in `airflow/`, the web app is in `application/`, and the dashboard is in `dashboard/app.R`.
 
@@ -56,13 +56,13 @@ The goal of this project is to:
 
 This project integrates multiple monthly datasets:
 
-- **Canadian retail grocery prices** (target variable)  
-- **Agricultural import data** (avocado and tomato)  
-- **Gas price signals** (U.S., Canada, Mexico → weighted fuel cost proxy)  
-- **Exchange rates** (CAD/USD, CAD/MXN)  
-- **Weather data (temperature and precipitation from Mexican production regions)**  
-- **Canadian CPI** (inflation adjustment)  
-- **FAO food price index** (supplementary signal)  
+- **Canadian retail grocery prices** (target variable) - Statistics Canada
+- **Agricultural import data** - Statistics Canada’s Canadian International Merchandise Trade data
+- **Gas price signals** (U.S., Canada → weighted fuel cost proxy) - U.S. Energy Information Administration, Statistics Canada
+- **Exchange rates** (CAD/USD, CAD/MXN) - Bank of Canada
+- **Weather data (temperature and precipitation from Mexican production regions)** - Meteorological Service of Mexico
+- **Canadian CPI** (inflation adjustment) - Statistics Canada
+- **FAO food price index** (supplementary signal) - Food and Agriculture Organization (FAO)
 
 ---
 
