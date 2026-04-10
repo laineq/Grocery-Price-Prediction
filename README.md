@@ -25,8 +25,6 @@ The system is designed as an **end-to-end automated pipeline**, where data is up
 - **Docker** : application packaging and deployment
 - **Shiny** : interactive dashboard
 
-The stack above matches the current project files: Airflow DAGs are in `airflow/`, the web app is in `application/`, and the dashboard is in `dashboard/app.R`.
-
 ---
 
 ## Final Outputs
