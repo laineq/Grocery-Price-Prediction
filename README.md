@@ -15,6 +15,20 @@ This project forecasts monthly Canadian grocery prices for **avocado and tomato*
 
 The system is designed as an **end-to-end automated pipeline**, where data is updated monthly and predictions are generated automatically.
 
+## Tech Stack
+
+- **Python** for data processing, feature engineering, and forecasting
+- **Apache Airflow** for the automated monthly pipeline
+- **AWS EC2** for hosting
+- **AWS S3** for Bronze, Silver, Gold, prediction, and app-output storage
+- **Next.js + React + TypeScript** for the GroceryCast web app
+- **Docker** for application packaging and deployment
+- **Shiny** for the interactive dashboard
+
+The stack above matches the current project files: Airflow DAGs are in `airflow/`, the web app is in `application/`, and the dashboard is in `dashboard/app.R`.
+
+---
+
 ## Final Outputs
 
 - **Web application (GroceryCast):** [http://35.91.193.142:3000](http://35.91.193.142:3000)
