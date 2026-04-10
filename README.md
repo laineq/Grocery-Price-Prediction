@@ -69,17 +69,19 @@ flowchart TD
     E --> I["future_features_monthly"]
     I --> J["prediction_monthly"]
     J --> K["app_output_monthly"]
-
-    subgraph Layers
-        L1["Bronze: raw source snapshots"]
-        L2["Silver: cleaned monthly tables"]
-        L3["Gold: product-specific feature tables"]
-        L4["Prediction: SARIMAX forecasts + confidence intervals"]
-        L5["App Output: JSON for GroceryCast"]
-    end
 ```
 
-The pipeline follows a **Bronze-Silver-Gold** architecture. Raw source data is first ingested into Bronze, transformed into standardized monthly Silver tables, merged into Gold feature tables, and then passed into the forecasting and app-output DAGs.
+### Data Layers
+
+```mermaid
+flowchart LR
+    A["Bronze<br/>Raw source snapshots"] --> B["Silver<br/>Cleaned and standardized monthly tables"]
+    B --> C["Gold<br/>Product-specific feature tables"]
+    C --> D["Prediction<br/>SARIMAX forecasts + confidence intervals"]
+    D --> E["App Output<br/>JSON for GroceryCast"]
+```
+
+The pipeline follows a **Bronze-Silver-Gold** architecture. Raw source data is first ingested into Bronze, transformed into standardized monthly Silver tables, merged into Gold feature tables, and then passed into the forecasting and app-output stages.
 
 ---
 
