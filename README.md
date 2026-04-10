@@ -104,7 +104,7 @@ We use **expanding-window cross-validation with one-step-ahead forecasting** to 
 
 ---
 
-## How to Run the Project
+## How to Run and Test
 
 ### 1. Baseline (Naive) and SARIMA
 
