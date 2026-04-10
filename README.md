@@ -55,6 +55,32 @@ This project leverages **Apache Airflow** to automate the end-to-end workflow:
 
 This enables continuous updates and **automated monthly forecasting**.
 
+### Airflow DAG Flow
+
+```mermaid
+flowchart TD
+    A["canadian_grocery_prices_monthly"] --> B["grocery_price_adjusted_monthly"]
+    C["consumer_price_index_monthly"] --> B
+    D["canadian_agricultural_import_monthly"] --> E["gold_features_monthly"]
+    F["exchange_rate_monthly"] --> E
+    G["oil_prices_monthly"] --> E
+    H["mexico_weather_monthly"] --> E
+    B --> E
+    E --> I["future_features_monthly"]
+    I --> J["prediction_monthly"]
+    J --> K["app_output_monthly"]
+
+    subgraph Layers
+        L1["Bronze: raw source snapshots"]
+        L2["Silver: cleaned monthly tables"]
+        L3["Gold: product-specific feature tables"]
+        L4["Prediction: SARIMAX forecasts + confidence intervals"]
+        L5["App Output: JSON for GroceryCast"]
+    end
+```
+
+The pipeline follows a **Bronze-Silver-Gold** architecture. Raw source data is first ingested into Bronze, transformed into standardized monthly Silver tables, merged into Gold feature tables, and then passed into the forecasting and app-output DAGs.
+
 ---
 
 ## Feature Engineering
@@ -163,4 +189,3 @@ This will enable users to easily explore model outputs and gain insights into pr
           - avocado_sarimax_cv_results.csv
           - tomato_sarimax_cv_results.csv
     
-
