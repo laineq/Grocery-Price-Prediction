@@ -23,9 +23,9 @@ The project includes:
 - **Web application (GroceryCast):** [http://35.91.193.142:3000](http://35.91.193.142:3000)
 - **Interactive dashboard:** [https://jli624.shinyapps.io/grocerypriceprediction/](https://jli624.shinyapps.io/grocerypriceprediction/)
 
-**GroceryCast** is our main web app for grocery price forecasting. It is designed to be simple and easy to use. Users can check predicted prices for upcoming periods, see whether prices are expected to go up or down, and view historical price trends.
+**GroceryCast** is our main web app for grocery price forecasting. Users can check predicted prices for upcoming periods, see whether prices are expected to go up or down, and view historical price trends.
 
-We also provide a separate interactive dashboard for deeper analysis. The dashboard includes model comparisons, predicted vs. actual price plots, historical trends, and lag analysis. The web app is meant for quick and simple use, while the dashboard gives more detail for users who want to explore the results further.
+The interactive dashboard includes model comparisons, predicted vs. actual price plots, historical trends, and lag analysis.
 
 ---
 
@@ -53,7 +53,9 @@ This project uses **Apache Airflow** to automate the full workflow:
 
 This lets us update the data and generate new forecasts automatically each month.
 
-At a high level, the pipeline checks public data sources for new grocery price, CPI, import, exchange-rate, oil-price, and weather data. It then cleans the data, builds product-specific features, runs the forecasting model, and prepares the final JSON files used by the GroceryCast web app.
+The pipeline checks public data sources for new grocery price, CPI, import, exchange-rate, oil-price, and weather data. 
+
+It then cleans the data, builds product-specific features, runs the forecasting model, and prepares the final JSON files used by the GroceryCast web app.
 
 ### Airflow DAG Flow
 
@@ -71,7 +73,9 @@ flowchart TD
     J --> K["app_output_monthly"]
 ```
 
-The DAG structure is split into small parts. Source-specific DAGs collect and clean monthly data for grocery prices, CPI, imports, exchange rates, oil prices, and weather. These outputs are then used to create adjusted price tables and Gold feature tables. After that, the pipeline builds future features, runs the SARIMAX forecast, and prepares the final app output.
+- Source-specific DAGs collect and clean monthly data for grocery prices, CPI, imports, exchange rates, oil prices, and weather. 
+- These outputs are then used to create adjusted price tables and Gold feature tables. 
+- After that, the pipeline builds future features, runs the SARIMAX forecast, and prepares the final app output.
 
 ### Data Layers
 
@@ -83,7 +87,10 @@ flowchart LR
     D --> E["App Output<br/>JSON for GroceryCast"]
 ```
 
-The pipeline follows a **Bronze-Silver-Gold** architecture. The Bronze layer stores raw data from external sources. The Silver layer stores cleaned and standardized monthly tables. The Gold layer stores product-specific feature tables for forecasting. These Gold tables are used to generate predictions and confidence intervals, and the final outputs are saved as JSON files for the GroceryCast frontend.
+- The pipeline follows a **Bronze-Silver-Gold** architecture. 
+    - The Bronze layer stores raw data from external sources. 
+    - The Silver layer stores cleaned and standardized monthly tables. 
+    - The Gold layer stores product-specific feature tables for forecasting. These Gold tables are used to generate predictions and confidence intervals, and the final outputs are saved as JSON files for the GroceryCast frontend.
 
 ---
 
