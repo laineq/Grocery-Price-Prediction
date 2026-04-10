@@ -54,17 +54,17 @@ This project integrates multiple monthly datasets:
 
 ## Automated Pipeline (Airflow)
 
-This project leverages **Apache Airflow** to automate the end-to-end workflow:
+This project uses **Apache Airflow** to automate the full workflow:
 
 - monthly data ingestion  
-- data validation and cleaning  
+- data cleaning and preprocessing  
 - feature engineering  
-- model training  
-- price prediction generation  
+- forecasting  
+- app output generation  
 
-This enables continuous updates and **automated monthly forecasting**.
+This lets us update the data and generate new forecasts automatically each month.
 
-At a high level, the monthly workflow begins by checking public data sources for new grocery price, CPI, import, exchange-rate, oil-price, and weather data. These datasets are ingested into the pipeline, standardized into monthly analytical tables, merged into product-specific feature sets, and then passed to the forecasting stage. The final DAG converts model outputs into JSON files that are consumed directly by the GroceryCast web application.
+At a high level, the pipeline checks public data sources for new grocery price, CPI, import, exchange-rate, oil-price, and weather data. It then cleans the data, builds product-specific features, runs the forecasting model, and prepares the final JSON files used by the GroceryCast web app.
 
 ### Airflow DAG Flow
 
@@ -82,7 +82,7 @@ flowchart TD
     J --> K["app_output_monthly"]
 ```
 
-The DAG structure is modular rather than monolithic. Source-specific ingestion DAGs independently collect and clean monthly data for grocery prices, CPI, imports, exchange rates, oil prices, and weather. These upstream outputs feed into `grocery_price_adjusted_monthly` and `gold_features_monthly`, where inflation-adjusted price targets and model-ready feature tables are created. Next, `future_features_monthly` extends the exogenous variables to the next forecast month, `prediction_monthly` runs the SARIMAX forecasting step, and `app_output_monthly` prepares the final application payloads.
+The DAG structure is split into small parts. Source-specific DAGs collect and clean monthly data for grocery prices, CPI, imports, exchange rates, oil prices, and weather. These outputs are then used to create adjusted price tables and Gold feature tables. After that, the pipeline builds future features, runs the SARIMAX forecast, and prepares the final app output.
 
 ### Data Layers
 
@@ -94,7 +94,7 @@ flowchart LR
     D --> E["App Output<br/>JSON for GroceryCast"]
 ```
 
-The pipeline follows a **Bronze-Silver-Gold** architecture. In the Bronze layer, raw snapshots from external data sources are stored without modification so the original inputs are preserved. In the Silver layer, those raw files are cleaned, filtered, and standardized into monthly datasets that can be merged consistently across sources. In the Gold layer, the Silver datasets are combined into product-specific feature tables that include the variables needed for forecasting. These Gold outputs are then used by the prediction stage to generate next-month forecasts and confidence intervals, which are finally transformed into JSON files for the GroceryCast frontend.
+The pipeline follows a **Bronze-Silver-Gold** architecture. The Bronze layer stores raw data from external sources. The Silver layer stores cleaned and standardized monthly tables. The Gold layer stores product-specific feature tables for forecasting. These Gold tables are used to generate predictions and confidence intervals, and the final outputs are saved as JSON files for the GroceryCast frontend.
 
 ---
 
