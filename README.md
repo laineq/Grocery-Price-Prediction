@@ -20,9 +20,9 @@ The system is designed as an **end-to-end automated pipeline**, where data is up
 - **Web application (GroceryCast):** [http://35.91.193.142:3000](http://35.91.193.142:3000)
 - **Interactive dashboard:** [https://jli624.shinyapps.io/grocerypriceprediction/](https://jli624.shinyapps.io/grocerypriceprediction/)
 
-Our final data product, **GroceryCast**, is a web-based forecasting tool designed to make grocery price predictions accessible to a broad audience. The web application is tailored for non-technical users and allows them to view predicted grocery prices for upcoming periods, understand whether prices are expected to increase or decrease, and explore historical trends through simple visualizations. The interface is intentionally lightweight and user-friendly so that users can quickly interpret predictions without technical background.
+**GroceryCast** is our main web app for grocery price forecasting. It is designed to be simple and easy to use. Users can check predicted prices for upcoming periods, see whether prices are expected to go up or down, and view historical price trends.
 
-For users who want deeper analytical insight, we also provide a separate interactive dashboard. The dashboard focuses on model behavior and evaluation, including comparisons between predicted and actual prices across multiple models, visualization of important drivers and historical trends, and lag-analysis views that help explain how past values influence current predictions. Together, the application and dashboard make the project both accessible and transparent by combining easy-to-read forecasts with more detailed model exploration.
+We also provide a separate interactive dashboard for deeper analysis. The dashboard includes model comparisons, predicted vs. actual price plots, historical trends, and lag analysis. The web app is meant for quick and simple use, while the dashboard gives more detail for users who want to explore the results further.
 
 ---
 
