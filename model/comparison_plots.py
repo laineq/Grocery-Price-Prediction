@@ -1,3 +1,5 @@
+"""Create baseline and XGBoost comparison charts against actual values."""
+
 from pathlib import Path
 
 import matplotlib
@@ -19,14 +21,17 @@ BASELINE_MODEL_LABELS = {
 
 
 def _coerce_date_index(df: pd.DataFrame, date_column: str = DATE_COLUMN) -> pd.DatetimeIndex:
+    """Parse the date column to a DatetimeIndex-compatible series."""
     return pd.to_datetime(df[date_column], errors="coerce")
 
 
 def _build_aligned_frame_from_series(series_by_name: dict[str, pd.Series], actual_series: pd.Series) -> pd.DataFrame:
+    """Align actual and model prediction series on a shared datetime index."""
     all_indices = set(actual_series.index)
     for series in series_by_name.values():
         all_indices.update(series.index)
 
+    # use union of dates so models with partial coverage stay comparable on one timeline.
     aligned_index = pd.DatetimeIndex(sorted(all_indices))
     aligned = pd.DataFrame(index=aligned_index)
     aligned[ACTUAL_COLUMN] = actual_series.reindex(aligned_index)
@@ -38,7 +43,8 @@ def _build_aligned_frame_from_series(series_by_name: dict[str, pd.Series], actua
 
 
 def _load_baseline_vs_actual_frame(product_output_dir: Path) -> pd.DataFrame | None:
-    baseline_path = product_output_dir / "predictions.csv"
+    """Load and align baseline predictions for plotting."""
+    baseline_path = product_output_dir / "naive_sarima" / "predictions.csv"
     if not baseline_path.exists():
         return None
 
@@ -68,6 +74,7 @@ def _load_baseline_vs_actual_frame(product_output_dir: Path) -> pd.DataFrame | N
 
 
 def _load_xgboost_vs_actual_frame(product_output_dir: Path) -> pd.DataFrame | None:
+    """Load and align XGBoost model predictions for plotting."""
     xgboost_root = product_output_dir / "xgboost"
     if not xgboost_root.exists():
         return None
@@ -108,6 +115,7 @@ def _load_xgboost_vs_actual_frame(product_output_dir: Path) -> pd.DataFrame | No
 
 
 def _plot_comparison(frame: pd.DataFrame, title: str, output_path: Path, product_name: str) -> None:
+    """Render and save a comparison line plot."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     plt.figure(figsize=(14, 7))
@@ -129,6 +137,7 @@ def _plot_comparison(frame: pd.DataFrame, title: str, output_path: Path, product
 
 
 def generate_comparison_plots(output_root: Path, product_name: str) -> None:
+    """Generate all available comparison plots for one product."""
     product_output_dir = output_root / product_name
     product_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -137,7 +146,7 @@ def generate_comparison_plots(output_root: Path, product_name: str) -> None:
         _plot_comparison(
             frame=baseline_frame,
             title="Baseline Models vs Actual",
-            output_path=product_output_dir / "baseline_vs_actual.png",
+            output_path=product_output_dir / "naive_sarima" / "baseline_vs_actual.png",
             product_name=product_name,
         )
 
@@ -146,6 +155,6 @@ def generate_comparison_plots(output_root: Path, product_name: str) -> None:
         _plot_comparison(
             frame=xgboost_frame,
             title="XGBoost Models vs Actual",
-            output_path=product_output_dir / "xgboost_vs_actual.png",
+            output_path=product_output_dir / "xgboost" / "xgboost_vs_actual.png",
             product_name=product_name,
         )

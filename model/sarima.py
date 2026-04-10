@@ -1,3 +1,5 @@
+"""SARIMA model training, diagnostics, and CV evaluation helpers."""
+
 import warnings
 from pathlib import Path
 
@@ -27,6 +29,7 @@ def save_diagnostics(
     model_label: str,
     lags: int = 24,
 ) -> dict:
+    """Save ACF/PACF diagnostics plot and ADF summary statistics."""
     output_dir.mkdir(parents=True, exist_ok=True)
     clean_series = series.dropna()
 
@@ -49,6 +52,7 @@ def save_diagnostics(
         diagnostics["adf_critical_10pct"] = float(adf_result[4]["10%"])
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+    # PACF becomes unstable at high lags on short series, so cap lags to feasible ranges.
     max_pacf_lags = min(lags, max(1, (len(clean_series) // 2) - 1))
     max_acf_lags = min(lags, max(1, len(clean_series) - 1))
 
@@ -78,6 +82,7 @@ def run_sarima_cv(
     target_column: str = "price_adjusted",
     log_column: str = "log_price",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Run fold-by-fold SARIMA forecasting and return predictions + summary."""
     config = SARIMA_ORDERS[product_name]
     fit_column = log_column if use_log else target_column
     model_name = "sarima_log" if use_log else "sarima_raw"
@@ -96,6 +101,7 @@ def run_sarima_cv(
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
+                    # Why: fit each fold on train history only to preserve causal evaluation.
                     model = SARIMAX(
                         train_series,
                         order=config["order"],
@@ -111,6 +117,7 @@ def run_sarima_cv(
 
         for step, (idx, forecast_value) in enumerate(zip(test_idx, forecast_values), start=1):
             if use_log:
+                #  metrics/reporting stay in price units even when model is fit on log scale.
                 prediction = np.exp(forecast_value) if not np.isnan(forecast_value) else np.nan
             else:
                 prediction = forecast_value

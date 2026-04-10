@@ -1,3 +1,5 @@
+"""Baseline forecasting models evaluated with expanding-window CV."""
+
 import numpy as np
 import pandas as pd
 
@@ -10,6 +12,13 @@ def run_baseline_cv(
     target_column: str = "price_adjusted",
     seasonal_period: int = 12,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Run naive and seasonal-naive baselines for all CV folds.
+
+    Returns:
+        A tuple containing:
+        - Row-level predictions across all folds.
+        - Aggregated metric summary by baseline model.
+    """
     rows: list[dict] = []
 
     y = df[target_column]
@@ -17,6 +26,7 @@ def run_baseline_cv(
 
     for fold_id, (train_idx, test_idx) in enumerate(folds, start=1):
         train = y.iloc[train_idx]
+        # Why: keep baseline forecasts fixed per fold so they use only pre-test information.
         naive_value = train.iloc[-1] if len(train) >= 1 else np.nan
         seasonal_value = train.iloc[-seasonal_period] if len(train) >= seasonal_period else np.nan
 
@@ -43,19 +53,19 @@ def run_baseline_cv(
             )
 
     predictions_df = pd.DataFrame(rows)
-    summary_rows: list[dict] = []
+    summary_records: list[dict] = []
     for model_name, model_predictions in predictions_df.groupby("model"):
-        metrics = compute_metrics(model_predictions["actual"], model_predictions["prediction"])
-        summary_rows.append(
+        metric_values = compute_metrics(model_predictions["actual"], model_predictions["prediction"])
+        summary_records.append(
             {
                 "model": model_name,
-                "mae": metrics["mae"],
-                "rmse": metrics["rmse"],
-                "mape": metrics["mape"],
-                "directional_accuracy": metrics["directional_accuracy"],
-                "n_obs": metrics["n_obs"],
+                "mae": metric_values["mae"],
+                "rmse": metric_values["rmse"],
+                "mape": metric_values["mape"],
+                "directional_accuracy": metric_values["directional_accuracy"],
+                "n_obs": metric_values["n_obs"],
                 "n_folds": int(model_predictions["fold"].nunique()),
             }
         )
-    summary_df = pd.DataFrame(summary_rows)
+    summary_df = pd.DataFrame(summary_records)
     return predictions_df, summary_df

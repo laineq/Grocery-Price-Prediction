@@ -1,3 +1,6 @@
+"""XGBoost forecasting pipeline with expanding-window evaluation."""
+# to run py model/xgboost.py
+
 from pathlib import Path
 import sys
 
@@ -9,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# py model/xgboost.py
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = CURRENT_DIR.parent
 if str(CURRENT_DIR) not in sys.path:
@@ -19,6 +21,7 @@ try:
     from xgboost import XGBRegressor
 except ImportError:
     sys.modules.pop("xgboost", None)
+    # keep local execution resilient when xgboost is installed outside the active interpreter path.
     fallback_paths = [Path.home() / "miniconda3" / "Lib" / "site-packages"]
     for fallback_path in fallback_paths:
         if (fallback_path / "xgboost").exists():
@@ -87,7 +90,18 @@ PRODUCT_CONFIGS = {
 }
 
 
+def _read_adjusted_csv(file_path: Path, selected_columns: list[str] | None = None) -> pd.DataFrame:
+    """Read an adjusted-data CSV and normalize its date column."""
+    df = pd.read_csv(file_path)
+    df = df.rename(columns={"date": DATE_COLUMN})
+    df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN], errors="coerce")
+    if selected_columns is not None:
+        df = df[selected_columns]
+    return df
+
+
 def _train_model(X_train: pd.DataFrame, y_train: pd.Series) -> XGBRegressor:
+    """Train one XGBoost regressor with the project defaults."""
     model = XGBRegressor(
         n_estimators=200,
         max_depth=3,
@@ -102,6 +116,7 @@ def _train_model(X_train: pd.DataFrame, y_train: pd.Series) -> XGBRegressor:
 
 
 def _load_source_a_merged_dataset(product_name: str, config: dict) -> pd.DataFrame:
+    """Load and merge adjusted-data sources used by models 1 and 2."""
     price_df = pd.read_csv(config["source_a_price_file"])
     price_df = price_df.rename(columns={"date": DATE_COLUMN, "price_adjusted": config["source_a_price_column"]})
     price_df[DATE_COLUMN] = pd.to_datetime(price_df[DATE_COLUMN], errors="coerce")
@@ -127,19 +142,15 @@ def _load_source_a_merged_dataset(product_name: str, config: dict) -> pd.DataFra
     else:
         import_df = import_df[[DATE_COLUMN, "qty"]].rename(columns={"qty": "import_qty"})
 
-    gas_df = pd.read_csv(ADJUSTED_DATA_DIR / "gas_price.csv")
-    gas_df = gas_df.rename(columns={"date": DATE_COLUMN})
-    gas_df[DATE_COLUMN] = pd.to_datetime(gas_df[DATE_COLUMN], errors="coerce")
-    gas_df = gas_df[[DATE_COLUMN, "integrated_gas_price"]]
-
-    xrate_df = pd.read_csv(ADJUSTED_DATA_DIR / "xrate_adjusted.csv")
-    xrate_df = xrate_df.rename(columns={"date": DATE_COLUMN})
-    xrate_df[DATE_COLUMN] = pd.to_datetime(xrate_df[DATE_COLUMN], errors="coerce")
-    xrate_df = xrate_df[[DATE_COLUMN, "MXN_CAD", "USD_CAD"]]
-
-    weather_df = pd.read_csv(ADJUSTED_DATA_DIR / "mexico_weather_adjusted.csv")
-    weather_df = weather_df.rename(columns={"date": DATE_COLUMN})
-    weather_df[DATE_COLUMN] = pd.to_datetime(weather_df[DATE_COLUMN], errors="coerce")
+    gas_df = _read_adjusted_csv(
+        ADJUSTED_DATA_DIR / "gas_price.csv",
+        selected_columns=[DATE_COLUMN, "integrated_gas_price"],
+    )
+    xrate_df = _read_adjusted_csv(
+        ADJUSTED_DATA_DIR / "xrate_adjusted.csv",
+        selected_columns=[DATE_COLUMN, "MXN_CAD", "USD_CAD"],
+    )
+    weather_df = _read_adjusted_csv(ADJUSTED_DATA_DIR / "mexico_weather_adjusted.csv")
     weather_df["STATE_normalized"] = (
         weather_df["STATE"]
         .astype(str)
@@ -159,11 +170,13 @@ def _load_source_a_merged_dataset(product_name: str, config: dict) -> pd.DataFra
         .sort_values(DATE_COLUMN)
         .reset_index(drop=True)
     )
+    # month captures repeating seasonality that tree models do not infer from timestamps directly.
     out_df["month"] = out_df[DATE_COLUMN].dt.month
     return out_df
 
 
 def _load_source_b_selective_dataset(config: dict) -> pd.DataFrame:
+    """Load selective feature-engineering dataset used by models 3 and 4."""
     df = pd.read_csv(config["selective_input_file"])
     df = df.rename(columns={"Date": DATE_COLUMN})
     df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN], errors="coerce")
@@ -173,6 +186,7 @@ def _load_source_b_selective_dataset(config: dict) -> pd.DataFrame:
 
 
 def _add_target_lags(df: pd.DataFrame, target_column: str) -> pd.DataFrame:
+    """Add lag features for the target column using configured lag steps."""
     out = df.copy()
     for lag in LAG_FEATURES:
         out[f"lag{lag}"] = out[target_column].shift(lag)
@@ -186,6 +200,7 @@ def _resolve_feature_columns(
     *,
     raise_if_empty: bool = True,
 ) -> list[str]:
+    """Return preferred columns that exist in a dataframe."""
     available = [col for col in preferred_columns if col in df.columns]
     missing = [col for col in preferred_columns if col not in df.columns]
     if missing:
@@ -196,6 +211,7 @@ def _resolve_feature_columns(
 
 
 def _derive_selective_feature_pool(df: pd.DataFrame) -> list[str]:
+    """Derive model feature candidates from selective input columns."""
     excluded_columns = {
         DATE_COLUMN,
         "Date",
@@ -206,6 +222,7 @@ def _derive_selective_feature_pool(df: pd.DataFrame) -> list[str]:
 
 
 def _build_model_specs(product_name: str, config: dict, source_a_df: pd.DataFrame, source_b_df: pd.DataFrame) -> list[dict]:
+    """Build model definitions for the four XGBoost variants."""
     source_a_external_features = _resolve_feature_columns(
         source_a_df,
         config["source_a_external_features"],
@@ -282,7 +299,9 @@ def _prepare_model_frame(
     target_column: str,
     price_column: str,
 ) -> pd.DataFrame:
+    """Select required columns, drop missing rows, and reset row index."""
     keep_cols = [DATE_COLUMN, price_column, target_column] + feature_columns
+    # drop rows with incomplete lag/external features so every fold trains on fully observed inputs.
     model_df = df[keep_cols].copy().dropna().reset_index(drop=True)
     return model_df
 
@@ -294,6 +313,7 @@ def _run_expanding_window_cv(
     target_column: str,
     price_column: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Run expanding-window CV for a single model specification."""
     folds = create_expanding_window_folds(
         n_samples=len(model_df),
         initial_window=INITIAL_WINDOW,
@@ -332,6 +352,7 @@ def _run_expanding_window_cv(
 
     cv_predictions_df = pd.DataFrame(cv_rows).sort_values(["date", "fold"]).reset_index(drop=True)
     predictions_df = (
+        # for cross validation
         cv_predictions_df.groupby("date", as_index=False)
         .agg(actual=("actual", "mean"), predicted=("predicted", "mean"))
         .sort_values("date")
@@ -363,6 +384,7 @@ def _run_expanding_window_cv(
 
 
 def _save_importance_plot(feature_importance_df: pd.DataFrame, output_dir: Path, product_name: str, model_name: str) -> None:
+    """Save feature-importance bar chart for one model variant."""
     plt.figure(figsize=(10, 6))
     plt.barh(feature_importance_df["feature"], feature_importance_df["importance"], color="steelblue")
     plt.gca().invert_yaxis()
@@ -375,6 +397,7 @@ def _save_importance_plot(feature_importance_df: pd.DataFrame, output_dir: Path,
 
 
 def _save_actual_vs_predicted_plot(predictions_df: pd.DataFrame, output_dir: Path, product_name: str, model_name: str) -> None:
+    """Save actual-vs-predicted time-series chart for one model variant."""
     plt.figure(figsize=(12, 6))
     plt.plot(predictions_df[DATE_COLUMN], predictions_df["actual"], label="Actual", linewidth=2, color="black")
     plt.plot(predictions_df[DATE_COLUMN], predictions_df["predicted"], label="Predicted", linewidth=2)
@@ -398,6 +421,7 @@ def _save_outputs(
     metrics_df: pd.DataFrame,
     feature_importance_df: pd.DataFrame,
 ) -> None:
+    """Persist metrics, predictions, importances, and plots for one model."""
     output_dir = OUTPUT_ROOT / product_name / "xgboost" / model_variant
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -426,6 +450,7 @@ def _export_dashboard_model_1_predictions(
     product_name: str,
     predictions_df: pd.DataFrame,
 ) -> None:
+    """Export model_1 predictions in dashboard CSV format with CI bounds."""
     product_output_dir = PREDICTION_RESULT_DIR / product_name
     product_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -437,6 +462,7 @@ def _export_dashboard_model_1_predictions(
 
     residuals = (export_df["actual"] - export_df["predicted"]).dropna()
     sigma = residuals.std(ddof=1) if len(residuals) > 1 else float("nan")
+    # residual spread provides a simple uncertainty proxy for dashboard bands.
     margin = 1.96 * sigma
 
     dashboard_out = pd.DataFrame(
@@ -451,6 +477,7 @@ def _export_dashboard_model_1_predictions(
 
 
 def run_product_models(product_name: str, config: dict) -> None:
+    """Train and evaluate all XGBoost model variants for one product."""
     source_a_df = _load_source_a_merged_dataset(product_name, config)
     source_a_df = _add_target_lags(source_a_df, config["source_a_target_column"])
 
@@ -519,6 +546,7 @@ def run_product_models(product_name: str, config: dict) -> None:
 
 
 def main() -> None:
+    """Run XGBoost pipelines for all configured products."""
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
     for product_name, config in PRODUCT_CONFIGS.items():
         run_product_models(product_name, config)
