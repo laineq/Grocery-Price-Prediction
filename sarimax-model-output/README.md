@@ -1,5 +1,5 @@
 -   **sarimax_predict_future.py:Predicts the target price using the SARIMAX model**
-        - output: Predicted prices along with confidence intervals, stored in **sarimax-model-output** module
+       - output: Predicted prices along with confidence intervals, stored in **sarimax-model-output** module
           - avocado_sarima_predictions.csv
           - tomato_sarima_predictions.csv
  -   **sarimax_evaluation.py:Evaluate the SARIMAX model**
