@@ -11,10 +11,10 @@ The system is designed as an **end-to-end automated pipeline**, where data is up
 ## Project Overview
 
 The project includes:
-- data integration from economic and environmental sources  
+- data integration from economic and weather sources  
 - feature engineering with lag analysis and transformations  
 - model comparison across baseline, time series, and machine learning approaches  
-- an automated pipeline for generating predictions  
+- an automated pipeline for generating predictions via a web application 
 
 ---
 
@@ -53,7 +53,7 @@ This project uses **Apache Airflow** to automate the full workflow:
 
 This lets us update the data and generate new forecasts automatically each month.
 
-The pipeline checks public data sources for new grocery price, CPI, import, exchange-rate, oil-price, and weather data. 
+The pipeline checks public data sources for new grocery prices, CPI, import, exchange-rate, oil-price, and weather data. 
 
 It then cleans the data, builds product-specific features, runs the forecasting model, and prepares the final JSON files used by the GroceryCast web app.
 
@@ -94,7 +94,7 @@ flowchart LR
 
 ---
 
-## Modeling Approach
+## Modelling Approach
 
 We evaluate three types of models:
 - **Baseline**: naive  
@@ -107,7 +107,7 @@ Evaluation metrics:
 - MAPE  
 - Directional Accuracy  
 
-We use **expanding-window cross-validation with one-step-ahead forecasting** to simulate real-world prediction.
+We use expanding-window cross-validation with one-step-ahead forecasting to simulate real-world prediction.
 
 ---
 
