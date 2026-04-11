@@ -237,6 +237,14 @@ button {
   -webkit-backdrop-filter: blur(10px);
 }
 
+.app-note {
+  margin: 28px 6px 12px;
+  color: rgba(72, 80, 75, 0.88);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .bottom-nav__item {
   display: flex;
   min-height: 70px;
@@ -725,5 +733,10 @@ button {
 
   .chart-legend__item:last-child {
     grid-column: 1 / -1;
+  }
+
+  .app-note {
+    margin-inline: 2px;
+    font-size: 11px;
   }
 }

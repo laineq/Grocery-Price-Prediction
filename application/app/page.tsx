@@ -24,7 +24,7 @@ export default async function HomePage() {
             <span className="hero-title__line">price trends.</span>
           </h1>
           <p className="hero-subtitle">
-            AI-powered forecasting of Canadian grocery prices using real-world data.
+            Data-driven forecasts of Canadian grocery prices using real-world data.
           </p>
         </section>
 

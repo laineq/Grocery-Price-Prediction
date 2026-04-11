@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "GroceryCast",
-  description: "AI-powered forecasting of Canadian grocery prices.",
+  description: "Data-driven forecasts of Canadian grocery prices.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

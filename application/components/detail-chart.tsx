@@ -389,12 +389,12 @@ export function DetailChart({ product }: { product: ProductSummary }) {
           <span
             className={`chart-line is-dashed ${product.accent === "green" ? "is-green" : "is-red"}`}
           />
-          <span>AI Forecast</span>
+          <span>Forecast</span>
         </div>
       </div>
 
       <div className="chart-note">
-        Gold points show AI-estimated months used while official grocery price releases are still delayed.
+        Gold points show estimated months used while official grocery price releases are still delayed.
       </div>
 
       <div className="chart-readout">

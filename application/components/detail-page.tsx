@@ -29,7 +29,7 @@ export function DetailPage({ product }: { product: ProductSummary }) {
             {product.name} Prediction
           </h1>
           <p className="hero-subtitle" style={{ marginTop: 14 }}>
-            AI-powered analysis of Canadian price trends to forecast next month&apos;s
+            Data-driven analysis of Canadian price trends to forecast next month&apos;s
             volatility.
           </p>
         </section>

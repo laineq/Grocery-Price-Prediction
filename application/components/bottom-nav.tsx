@@ -20,20 +20,26 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="bottom-nav">
-      {navItems.map(({ href, label, icon: Icon }) => {
-        const isActive = pathname === href;
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={`bottom-nav__item${isActive ? " is-active" : ""}`}
-          >
-            <Icon className="bottom-nav__icon" />
-            <span>{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <p className="app-note">
+        Forecast accuracy varies by product. Avocado results should be interpreted with
+        caution.
+      </p>
+      <nav className="bottom-nav">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`bottom-nav__item${isActive ? " is-active" : ""}`}
+            >
+              <Icon className="bottom-nav__icon" />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

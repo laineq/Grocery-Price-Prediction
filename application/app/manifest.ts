@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "GroceryCast",
     short_name: "GroceryCast",
-    description: "AI-powered forecasting of Canadian grocery prices.",
+    description: "Data-driven forecasts of Canadian grocery prices.",
     start_url: "/",
     display: "standalone",
     background_color: "#f5f2e8",
